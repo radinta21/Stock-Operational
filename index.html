@@ -59,6 +59,13 @@
     white-space:nowrap;
   }
 
+  @media (max-width:600px){
+    header.top .brand{flex-direction:column; align-items:stretch;}
+    header.top .period-pill-row{width:100%; justify-content:space-between; margin-top:12px;}
+    header.top .period-pill{flex:1; text-align:center; white-space:normal;}
+    header.top h1{font-size:18px; line-height:1.25;}
+  }
+
   nav.tabs{
     display:flex; overflow-x:auto;
     background:var(--tab-bg);
@@ -174,10 +181,10 @@
     border:1px solid currentColor; background:transparent; color:inherit;
     border-radius:3px; padding:3px 10px; font-size:12px; cursor:pointer;
   }
-  .period-pill-row{display:flex; align-items:center; gap:8px;}
+  .period-pill-row{display:flex; align-items:center; gap:8px; flex-shrink:0;}
   .btn-refresh{
     background:transparent; border:1px solid #C9DACB; color:#fff; border-radius:3px;
-    padding:6px 9px; font-size:12px; cursor:pointer;
+    padding:6px 9px; font-size:12px; cursor:pointer; white-space:nowrap; flex-shrink:0;
   }
 </style>
 </head>
@@ -187,7 +194,7 @@
   <div class="brand">
     <div>
       <h1>Stok Barang Operasional</h1>
-      <div class="sub">Cabang Campang Raya · CV. Chandra Perdana Abadi</div>
+      <div class="sub">Campang Raya</div>
     </div>
     <div class="period-pill-row">
       <div class="period-pill" id="periodPill">–</div>
