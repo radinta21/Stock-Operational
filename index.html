@@ -1,0 +1,1287 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stok Operasional — Cabang Campang Raya</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+  :root{
+    --paper:#EEF2EE;
+    --card:#FFFFFF;
+    --ink:#1E2A22;
+    --ink-soft:#5B6B5F;
+    --line:#D7DED7;
+    --green:#2F6F4E;
+    --green-deep:#1F4E36;
+    --amber:#B9791A;
+    --rust:#B5461C;
+    --tab-bg:#E2E9E1;
+    --ok-bg:#E4F0E6; --ok-fg:#2F6F4E;
+    --watch-bg:#FBEFDC; --watch-fg:#8A5A10;
+    --danger-bg:#FBE4DC; --danger-fg:#9B3A18;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    -webkit-font-smoothing:antialiased;
+    padding-bottom:70px;
+  }
+  h1,h2,h3{font-family:'Zilla Slab',serif; margin:0; color:var(--green-deep);}
+  .mono{font-family:'Roboto Mono',monospace;}
+  a{color:var(--green);}
+  button{font-family:inherit; cursor:pointer;}
+  input,select,textarea{font-family:inherit; font-size:15px;}
+
+  header.top{
+    background:var(--green-deep);
+    color:#F2F6F1;
+    padding:18px 16px 14px;
+    position:sticky; top:0; z-index:20;
+    border-bottom:3px solid var(--green);
+  }
+  header.top .brand{display:flex; justify-content:space-between; align-items:flex-start; gap:10px;}
+  header.top h1{color:#fff; font-size:20px; letter-spacing:.2px;}
+  header.top .sub{font-size:12.5px; color:#C9DACB; margin-top:3px;}
+  header.top .period-pill{
+    font-family:'Roboto Mono',monospace;
+    background:rgba(255,255,255,.12);
+    border:1px solid rgba(255,255,255,.25);
+    border-radius:3px;
+    padding:5px 9px;
+    font-size:12px;
+    white-space:nowrap;
+  }
+
+  nav.tabs{
+    display:flex; overflow-x:auto;
+    background:var(--tab-bg);
+    border-bottom:1px solid var(--line);
+    position:sticky; top:66px; z-index:19;
+    scrollbar-width:none;
+  }
+  nav.tabs::-webkit-scrollbar{display:none;}
+  nav.tabs button{
+    flex:0 0 auto;
+    background:none; border:none; border-bottom:3px solid transparent;
+    padding:12px 14px; font-size:13.5px; font-weight:600; color:var(--ink-soft);
+    white-space:nowrap;
+  }
+  nav.tabs button.active{color:var(--green-deep); border-bottom-color:var(--green);}
+
+  main{max-width:900px; margin:0 auto; padding:16px;}
+  section.panel{display:none;}
+  section.panel.active{display:block;}
+
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:4px;
+    padding:16px;
+    margin-bottom:14px;
+  }
+  .card h2{font-size:17px;}
+  .card h3{font-size:14.5px; margin-bottom:2px;}
+  .hint{font-size:12.5px; color:var(--ink-soft); line-height:1.5; margin-top:4px;}
+  .row{display:flex; gap:10px; flex-wrap:wrap;}
+  .row > *{flex:1; min-width:140px;}
+  label{display:block; font-size:12.5px; font-weight:600; color:var(--ink-soft); margin-bottom:4px;}
+  input[type=text],input[type=number],input[type=date],select,textarea{
+    width:100%; padding:9px 10px; border:1px solid var(--line); border-radius:3px; background:#FCFDFC;
+  }
+  input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid var(--green); outline-offset:1px;}
+  .field{margin-bottom:12px;}
+
+  .btn{
+    display:inline-flex; align-items:center; gap:6px;
+    background:var(--green); color:#fff; border:none; border-radius:3px;
+    padding:10px 16px; font-size:13.5px; font-weight:600;
+  }
+  .btn:hover{background:var(--green-deep);}
+  .btn.secondary{background:#fff; color:var(--green-deep); border:1px solid var(--green);}
+  .btn.ghost{background:none; color:var(--ink-soft); border:1px solid var(--line);}
+  .btn.danger{background:var(--rust);}
+  .btn:disabled{opacity:.5; cursor:not-allowed;}
+  .btn-row{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;}
+
+  table{width:100%; border-collapse:collapse; font-size:13.5px;}
+  th,td{text-align:left; padding:8px 6px; border-bottom:1px solid var(--line); vertical-align:top;}
+  th{font-size:11.5px; text-transform:none; color:var(--ink-soft); font-weight:600;}
+  td.num, th.num{font-family:'Roboto Mono',monospace; text-align:right; white-space:nowrap;}
+
+  .badge{display:inline-block; padding:3px 8px; border-radius:3px; font-size:11.5px; font-weight:600;}
+  .badge.ok{background:var(--ok-bg); color:var(--ok-fg);}
+  .badge.watch{background:var(--watch-bg); color:var(--watch-fg);}
+  .badge.danger{background:var(--danger-bg); color:var(--danger-fg);}
+
+  .item-line{border:1px solid var(--line); border-radius:4px; padding:12px; margin-bottom:10px; background:#FCFDFC;}
+  .item-line .head{display:flex; justify-content:space-between; gap:8px; align-items:baseline; margin-bottom:8px;}
+  .item-line .head .name{font-weight:600; font-size:14px;}
+  .item-line .head .cat{font-size:11.5px; color:var(--ink-soft);}
+  .photo-row{display:flex; gap:8px; align-items:center; margin-top:8px;}
+  .photo-thumb{width:56px; height:56px; object-fit:cover; border-radius:3px; border:1px solid var(--line);}
+  .photo-placeholder{width:56px; height:56px; border:1px dashed var(--line); border-radius:3px; display:flex; align-items:center; justify-content:center; font-size:10px; color:var(--ink-soft); text-align:center;}
+  input[type=file]{font-size:12px;}
+
+  .sig-wrap{border:1px solid var(--line); border-radius:3px; background:#fff; touch-action:none;}
+  canvas.sig{width:100%; height:140px; display:block;}
+
+  .empty{text-align:center; padding:30px 10px; color:var(--ink-soft); font-size:13.5px;}
+  .toast{
+    position:fixed; bottom:18px; left:50%; transform:translateX(-50%);
+    background:var(--ink); color:#fff; padding:10px 18px; border-radius:4px;
+    font-size:13px; z-index:100; max-width:90%; text-align:center;
+    box-shadow:0 4px 14px rgba(0,0,0,.2);
+  }
+  .status-dot{display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:5px;}
+  .status-dot.on{background:#4CAF6D;} .status-dot.off{background:var(--rust);}
+
+  .session-item{display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--line); font-size:13.5px;}
+  .session-item:last-child{border-bottom:none;}
+  .session-item .meta{color:var(--ink-soft); font-size:12px;}
+
+  .photo-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:12px; margin-top:10px;}
+  .photo-grid .pg-item{border:1px solid var(--line); border-radius:4px; padding:8px; background:#FCFDFC; text-align:center;}
+  .photo-grid .pg-item img{width:100%; height:120px; object-fit:cover; border-radius:3px; border:1px solid var(--line); display:block; margin-bottom:6px;}
+  .photo-grid .pg-item .pg-name{font-size:12.5px; font-weight:600; line-height:1.3;}
+  .photo-grid .pg-item .pg-meta{font-size:11px; color:var(--ink-soft); margin-top:2px;}
+  /* Kondisi Stok Akhir: foto sedikit lebih besar dari grid default */
+  #akhirPhotoGrid{grid-template-columns:repeat(auto-fill,minmax(210px,1fr));}
+  #akhirPhotoGrid .pg-item img{height:190px;}
+
+  .nota-line{border:1px solid var(--line); border-radius:4px; padding:12px; margin-bottom:10px; background:#FCFDFC;}
+
+  @media print{
+    header.top, nav.tabs, .btn-row, .no-print{display:none !important;}
+  }
+  #pdfArea{background:#fff;}
+  #pdfArea h2{border-bottom:2px solid var(--green); padding-bottom:6px;}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">
+    <div>
+      <h1>Stok Barang Operasional</h1>
+      <div class="sub">Cabang Campang Raya · CV. Chandra Perdana Abadi</div>
+    </div>
+    <div class="period-pill" id="periodPill">–</div>
+  </div>
+</header>
+
+<nav class="tabs" id="tabs">
+  <button data-tab="setting" class="active">Pengaturan</button>
+  <button data-tab="items">Master Barang</button>
+  <button data-tab="awal">Stok Awal</button>
+  <button data-tab="nota">Nota Pembelian</button>
+  <button data-tab="mingguan">Cek Mingguan</button>
+  <button data-tab="akhir">Stok Akhir</button>
+  <button data-tab="forecast">Forecast &amp; Laporan</button>
+  <button data-tab="riwayat">Riwayat Periode</button>
+</nav>
+
+<main>
+
+  <!-- ================= SETTING ================= -->
+  <section class="panel active" id="panel-setting">
+    <div class="card">
+      <h2>Laporan</h2>
+      <p class="hint">Email tujuan pengiriman laporan stok bulanan (opsional). Koneksi ke spreadsheet sudah diatur otomatis di sistem.</p>
+      <div class="field">
+        <label>Email tujuan laporan bulanan (opsional)</label>
+        <input type="text" id="reportEmail" placeholder="pusat@perusahaan.com, kepala.cabang@perusahaan.com">
+      </div>
+      <div class="btn-row">
+        <button class="btn" id="btnSaveSetting">Simpan Email Laporan</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Periode Berjalan</h2>
+      <p class="hint">Siklus stok berjalan dari tanggal 11 hingga tanggal 10 bulan berikutnya, mengikuti jadwal belanja bulanan cabang.</p>
+      <div class="row">
+        <div class="field"><label>Mulai periode</label><input type="date" id="periodStart"></div>
+        <div class="field"><label>Akhir periode</label><input type="date" id="periodEnd"></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn secondary" id="btnUsePeriodNow">Gunakan Periode Berjalan Otomatis</button>
+        <button class="btn" id="btnLoadPeriod">Muat / Buka Periode Ini</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= ITEMS ================= -->
+  <section class="panel" id="panel-items">
+    <div class="card">
+      <h2>Master Barang Habis Pakai</h2>
+      <p class="hint">Daftar ini sudah diisi awal dari struk belanja 11 Agustus 2026. Sesuaikan nama, satuan, atau kategori bila perlu — daftar ini dipakai untuk periode manapun.</p>
+      <div id="itemsList"></div>
+      <div class="btn-row">
+        <button class="btn secondary" id="btnAddItem">+ Tambah Barang</button>
+        <button class="btn" id="btnSaveItems">Simpan Master Barang</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= STOK AWAL ================= -->
+  <section class="panel" id="panel-awal">
+    <div class="card">
+      <h2>Pencatatan Stok Awal</h2>
+      <p class="hint">Diisi di awal periode (sekitar tanggal 11), setelah barang belanjaan diterima. Sertakan foto kondisi stok tiap barang sebagai bukti awal.</p>
+      <div class="field"><label>Tanggal pencatatan</label><input type="date" id="awalDate"></div>
+      <div id="awalList"></div>
+      <div class="field" style="margin-top:6px;"><label>Nama pemeriksa</label><input type="text" id="awalInspector" placeholder="Nama yang mencatat stok awal"></div>
+      <div class="btn-row">
+        <button class="btn" id="btnSaveAwal">Simpan Stok Awal</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= NOTA PEMBELIAN ================= -->
+  <section class="panel" id="panel-nota">
+    <div class="card">
+      <h2>Nota Pembelian</h2>
+      <p class="hint">Upload foto nota (struk) pembelian barang operasional untuk periode ini. Atur tanggal tiap nota agar sesuai dengan tanggal yang tertera pada nota — tidak harus sama dengan tanggal pencatatan stok. Foto nota ini akan dilampirkan sebagai halaman tambahan pada Laporan Stok.</p>
+      <div id="notaList"></div>
+      <div class="btn-row">
+        <button class="btn secondary" id="btnAddNota">+ Tambah Nota</button>
+        <button class="btn" id="btnSaveNota">Simpan Nota Pembelian</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= MINGGUAN ================= -->
+  <section class="panel" id="panel-mingguan">
+    <div class="card">
+      <h2>Cek Stok Mingguan</h2>
+      <p class="hint">Lakukan pengecekan sisa stok tiap minggu selama periode berjalan, untuk memantau kecepatan pemakaian. Foto tidak wajib pada cek mingguan.</p>
+      <div class="row">
+        <div class="field"><label>Minggu ke-</label><input type="number" id="weekNumber" min="1" value="1"></div>
+        <div class="field"><label>Tanggal cek</label><input type="date" id="weekDate"></div>
+      </div>
+      <div id="mingguanList"></div>
+      <div class="field"><label>Nama pemeriksa mingguan</label><input type="text" id="weekInspector"></div>
+      <div class="field">
+        <label>Tanda tangan pemeriksa mingguan</label>
+        <div class="sig-wrap"><canvas class="sig" id="sigWeekly"></canvas></div>
+        <div class="btn-row"><button class="btn ghost" data-clear="sigWeekly">Hapus Tanda Tangan</button></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn" id="btnSaveWeek">Simpan Cek Mingguan</button>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Riwayat Cek Mingguan Periode Ini</h3>
+      <div id="weekHistory" class="empty">Belum ada data.</div>
+    </div>
+  </section>
+
+  <!-- ================= AKHIR ================= -->
+  <section class="panel" id="panel-akhir">
+    <div class="card">
+      <h2>Stok Akhir Bulan (Tanggal 10)</h2>
+      <p class="hint">Diisi di akhir periode, sebelum belanja bulan berikutnya. Sertakan foto kondisi stok akhir tiap barang — data ini menjadi dasar forecast dan rencana pembelian bulan depan.</p>
+      <div class="field"><label>Tanggal pencatatan</label><input type="date" id="akhirDate"></div>
+      <div id="akhirList"></div>
+      <div class="field"><label>Nama pemeriksa bulanan</label><input type="text" id="akhirInspector"></div>
+      <div class="field">
+        <label>Tanda tangan pemeriksa bulanan</label>
+        <div class="sig-wrap"><canvas class="sig" id="sigMonthly"></canvas></div>
+        <div class="btn-row"><button class="btn ghost" data-clear="sigMonthly">Hapus Tanda Tangan</button></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn" id="btnSaveAkhir">Simpan Stok Akhir</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= FORECAST ================= -->
+  <section class="panel" id="panel-forecast">
+    <div class="card" id="pdfArea">
+      <h2>Laporan &amp; Forecast Kebutuhan Bulan Depan</h2>
+      <p class="hint">Ringkasan pemakaian, dan Berapa hari lagi stok tiap barang diperkirakan habis, dihitung dari stok awal, cek mingguan, dan stok akhir periode ini.</p>
+      <div id="forecastMeta" class="hint"></div>
+      <div style="overflow-x:auto;">
+        <table id="forecastTable">
+          <thead>
+            <tr><th>Barang</th><th class="num">Awal</th><th class="num">Akhir</th><th class="num">Pakai/Hari</th><th class="num">Sisa Hari</th><th>Perkiraan Habis</th><th class="num">Saran Beli</th><th>Status</th></tr>
+          </thead>
+          <tbody id="forecastBody"></tbody>
+        </table>
+      </div>
+      <div id="signOffArea" style="margin-top:16px;">
+        <div class="row">
+          <div><div class="hint">Pemeriksa Mingguan Terakhir</div><div id="sigWeeklyPreviewWrap"></div></div>
+          <div><div class="hint">Pemeriksa Bulanan</div><div id="sigMonthlyPreviewWrap"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="pdfAkhirPhotos" style="display:none;">
+      <h2>Lampiran: Kondisi Stok Akhir</h2>
+      <p class="hint">Foto kondisi stok akhir tiap barang beserta namanya, dilampirkan sebagai halaman tambahan pada laporan.</p>
+      <div id="akhirPhotoGrid" class="photo-grid"></div>
+    </div>
+
+    <div class="card" id="pdfNotaPhotos" style="display:none;">
+      <h2>Lampiran: Foto Nota Pembelian</h2>
+      <p class="hint">Foto nota pembelian periode ini. Pratinjau di bawah berupa thumbnail kecil, namun pada PDF tiap nota akan tampil 1 halaman penuh agar tulisan pada nota tetap terbaca.</p>
+      <div id="notaPhotoGrid" class="photo-grid"></div>
+    </div>
+
+    <div class="btn-row no-print">
+      <button class="btn" id="btnRunForecast">Hitung / Perbarui Forecast</button>
+      <button class="btn secondary" id="btnExportPdf">Export ke PDF</button>
+      <button class="btn secondary" id="btnEmailPdf">Kirim PDF via Email</button>
+    </div>
+  </section>
+
+  <!-- ================= RIWAYAT ================= -->
+  <section class="panel" id="panel-riwayat">
+    <div class="card">
+      <h2>Riwayat Periode</h2>
+      <p class="hint">Daftar periode yang sudah tercatat di spreadsheet. Pilih untuk memuat sebagai periode aktif (misalnya untuk melihat kembali atau melengkapi data).</p>
+      <div id="periodListArea" class="empty">Memuat...</div>
+      <div class="btn-row"><button class="btn secondary" id="btnRefreshPeriods">Muat Ulang Daftar Periode</button></div>
+    </div>
+  </section>
+
+</main>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------------- CONFIG / STATE ---------------- */
+const LS_KEY = "stokcp_config_v1";
+const LS_CACHE = "stokcp_cache_v1";
+
+const DEFAULT_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzIyIhyrwsi4F3puIyPUIhpAUdmSCm-OYT5M0fJHERPD9jIj2-EAT3y_ad8VBVIlfGC/exec";
+let CFG = { scriptUrl: DEFAULT_SCRIPT_URL, reportEmail:"" };
+let STATE = {
+  periodStart: null,
+  periodEnd: null,
+  periodId: null,
+  items: [],
+  awal: {},      // itemId -> {qty, photo, date}
+  akhir: {},     // itemId -> {qty, photo, date}
+  weeks: [],     // [{week, date, inspector, sig, values:{itemId:qty}}]
+  awalInspector: "",
+  akhirInspector: "",
+  sigMonthly: "",
+  notaPembelian: [], // [{id, date, note, photo}]
+  customCategories: []
+};
+
+const CATEGORY_OPTIONS = [
+  "Kebersihan Pantry & Dapur",
+  "Kebersihan Karyawan & Toilet",
+  "Perlengkapan Tisu & Sanitasi",
+  "Alat Kebersihan & Peralatan",
+  "Pembersih & Pengharum Ruangan",
+  "Pantry & Konsumsi Kantor",
+  "Keperluan Netop"
+];
+function allCategoryOptions(){
+  const extra = (STATE.customCategories||[]).filter(c=>!CATEGORY_OPTIONS.includes(c));
+  return CATEGORY_OPTIONS.concat(extra);
+}
+
+const SEED_ITEMS = [
+  {id:"milo", name:"Milo 3in1 (dus 18x34g)", unit:"dus", category:"Pantry"},
+  {id:"tongtali", name:"Tong Tali J25x50g", unit:"pcs", category:"Operasional"},
+  {id:"gulaku", name:"Gula Pasir Gulaku 1kg", unit:"pcs", category:"Pantry"},
+  {id:"kopi", name:"Kopi J.A 500g", unit:"pcs", category:"Pantry"},
+  {id:"hitaer", name:"Hit Aerosol Lavender Breeze 600", unit:"pcs", category:"Kebersihan & Sanitasi"},
+  {id:"vapeswt", name:"Vape Aerosol Sweet Powder 600", unit:"pcs", category:"Kebersihan & Sanitasi"},
+  {id:"vapefruit", name:"Vape Aerosol Fruit Fresh 600", unit:"pcs", category:"Kebersihan & Sanitasi"},
+  {id:"stellafruit", name:"Stella Pocket Fruit", unit:"pcs", category:"Kebersihan & Sanitasi"},
+  {id:"stellaflower", name:"Stella Pocket Flower", unit:"pcs", category:"Kebersihan & Sanitasi"},
+  {id:"scotch", name:"Scotch Busa Spon Hijau 30m", unit:"pcs", category:"Operasional"},
+  {id:"klinkantong", name:"Kantong Sampah Klin Pak Besar", unit:"pack", category:"Kebersihan & Sanitasi"},
+  {id:"dettolscr", name:"Dettol Hand Sanitizer Refill 200ml", unit:"pcs", category:"Kebersihan & Sanitasi"},
+  {id:"dettolsnst", name:"Dettol Hand Sanitizer Sensitive Refill 200ml", unit:"pcs", category:"Kebersihan & Sanitasi"},
+  {id:"harpic", name:"Harpic Power 450ml", unit:"pcs", category:"Kebersihan & Sanitasi"},
+  {id:"nicerefill", name:"Tisu Nice Refill 1000's", unit:"pack", category:"Kebersihan & Sanitasi"},
+  {id:"tessa", name:"Tisu Tessa Refill", unit:"pack", category:"Kebersihan & Sanitasi"},
+  {id:"scekonomi", name:"Sabun Cuci Piring SC Ekonomi 1850gr", unit:"pcs", category:"Kebersihan & Sanitasi"},
+  {id:"niceroll", name:"Tisu Roll Nice Embos 10", unit:"pack", category:"Kebersihan & Sanitasi"},
+  {id:"bukrim", name:"Sabun Cuci Tangan Bukrim Liquid 800ml", unit:"pcs", category:"Kebersihan & Sanitasi"},
+  {id:"cling", name:"Cling Pembersih Kaca 425ml", unit:"pcs", category:"Kebersihan & Sanitasi"},
+  {id:"dahliacndn", name:"Pengharum Dahlia F601 Candy Pudding", unit:"pcs", category:"Kebersihan & Sanitasi"},
+  {id:"dahliacoffee", name:"Pengharum Dahlia F601 Coffee", unit:"pcs", category:"Kebersihan & Sanitasi"},
+  {id:"dahliateh", name:"Pengharum Dahlia F601 Teh", unit:"pcs", category:"Kebersihan & Sanitasi"}
+];
+
+/* ---------------- UTIL ---------------- */
+function fmtDate(d){
+  if(!d) return "-";
+  const dt = (d instanceof Date) ? d : new Date(d);
+  if(isNaN(dt)) return "-";
+  return dt.toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
+}
+function isoDate(d){ return d.toISOString().slice(0,10); }
+function todayIso(){ return isoDate(new Date()); }
+function toast(msg, ms){
+  const t = document.createElement('div');
+  t.className='toast'; t.textContent=msg;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(), ms||2600);
+}
+function uid(){ return Math.random().toString(36).slice(2,10); }
+
+function computePeriodFor(dateObj){
+  const d = new Date(dateObj);
+  let start;
+  if(d.getDate() >= 11){
+    start = new Date(d.getFullYear(), d.getMonth(), 11);
+  } else {
+    start = new Date(d.getFullYear(), d.getMonth()-1, 11);
+  }
+  const end = new Date(start.getFullYear(), start.getMonth()+1, 10);
+  return {start, end};
+}
+function periodIdFrom(start){
+  const d = new Date(start);
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,'0');
+}
+
+/* ---------------- PERSISTENCE (config) ---------------- */
+function loadConfig(){
+  try{
+    const saved = JSON.parse(localStorage.getItem(LS_KEY)||"{}");
+    if(saved.reportEmail) CFG.reportEmail = saved.reportEmail;
+  }catch(e){}
+  CFG.scriptUrl = DEFAULT_SCRIPT_URL; // koneksi diatur di backend, tidak bisa diubah lewat tampilan
+  document.getElementById('reportEmail').value = CFG.reportEmail||"";
+}
+function saveConfig(){
+  CFG.reportEmail = document.getElementById('reportEmail').value.trim();
+  localStorage.setItem(LS_KEY, JSON.stringify({reportEmail: CFG.reportEmail}));
+}
+function cacheState(){
+  try{ localStorage.setItem(LS_CACHE, JSON.stringify(STATE)); }catch(e){}
+}
+function loadCache(){
+  try{
+    const c = JSON.parse(localStorage.getItem(LS_CACHE)||"null");
+    if(c) STATE = Object.assign(STATE, c);
+  }catch(e){}
+}
+
+/* ---------------- API (Google Apps Script) ---------------- */
+async function apiOnce(action, payload, timeoutMs){
+  const body = Object.assign({action}, payload||{});
+  const controller = new AbortController();
+  const timer = setTimeout(()=>controller.abort(), timeoutMs);
+  let res;
+  try{
+    res = await fetch(CFG.scriptUrl, {
+      method:"POST",
+      headers:{"Content-Type":"text/plain;charset=utf-8"},
+      body: JSON.stringify(body),
+      signal: controller.signal
+    });
+  }catch(networkErr){
+    if(networkErr.name === 'AbortError'){
+      throw new Error("Waktu koneksi habis (server terlalu lama merespons). Coba lagi dengan koneksi lebih stabil.");
+    }
+    throw new Error("Tidak bisa terhubung ke server (periksa koneksi internet, atau apakah foto terlalu besar/koneksi lambat).");
+  }finally{
+    clearTimeout(timer);
+  }
+  if(!res.ok){
+    throw new Error("Server merespons error (HTTP "+res.status+"). Pastikan Apps Script sudah di-deploy ulang sebagai versi baru.");
+  }
+  let json;
+  try{
+    json = await res.json();
+  }catch(parseErr){
+    throw new Error("Respons server tidak valid. Pastikan Apps Script sudah di-deploy ulang sebagai versi baru.");
+  }
+  if(json && json.error) throw new Error(json.error);
+  return json;
+}
+async function api(action, payload){
+  if(!CFG.scriptUrl){ toast("Koneksi server belum diatur"); throw new Error("no url"); }
+  try{
+    return await apiOnce(action, payload, 25000);
+  }catch(e){
+    // one automatic retry for transient network/timeout errors, not for server-side/logic errors
+    if(/terhubung ke server|Waktu koneksi habis/.test(e.message)){
+      return await apiOnce(action, payload, 25000);
+    }
+    throw e;
+  }
+}
+
+/* ---------------- RENDER: TABS ---------------- */
+document.getElementById('tabs').addEventListener('click', (e)=>{
+  const btn = e.target.closest('button[data-tab]');
+  if(!btn) return;
+  document.querySelectorAll('#tabs button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('section.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+btn.dataset.tab).classList.add('active');
+  if(btn.dataset.tab==='forecast') runForecast();
+  if(btn.dataset.tab==='riwayat') refreshPeriods();
+});
+
+/* ---------------- PERIOD ---------------- */
+function refreshPeriodPill(){
+  document.getElementById('periodPill').textContent =
+    STATE.periodStart ? (fmtDate(STATE.periodStart)+" – "+fmtDate(STATE.periodEnd)) : "Periode belum dipilih";
+}
+document.getElementById('btnUsePeriodNow').addEventListener('click', ()=>{
+  const p = computePeriodFor(new Date());
+  document.getElementById('periodStart').value = isoDate(p.start);
+  document.getElementById('periodEnd').value = isoDate(p.end);
+});
+document.getElementById('btnLoadPeriod').addEventListener('click', async ()=>{
+  const s = document.getElementById('periodStart').value;
+  const e = document.getElementById('periodEnd').value;
+  if(!s || !e){ toast("Pilih tanggal mulai dan akhir periode dulu"); return; }
+  STATE.periodStart = s; STATE.periodEnd = e; STATE.periodId = periodIdFrom(s);
+  refreshPeriodPill();
+  document.getElementById('awalDate').value = s;
+  document.getElementById('akhirDate').value = e;
+  document.getElementById('weekDate').value = todayIso();
+  await pullPeriodData();
+  toast("Periode "+STATE.periodId+" dimuat");
+});
+
+/* ---------------- ITEMS ---------------- */
+function categorySelectHtml(idx, currentCat){
+  const opts = allCategoryOptions();
+  let html = `<select data-f="category" data-i="${idx}">`;
+  opts.forEach(c=>{
+    html += `<option value="${escapeHtml(c)}" ${c===currentCat?'selected':''}>${escapeHtml(c)}</option>`;
+  });
+  if(currentCat && !opts.includes(currentCat)){
+    html += `<option value="${escapeHtml(currentCat)}" selected>${escapeHtml(currentCat)}</option>`;
+  }
+  html += `<option value="__new__">+ Tambah kategori baru...</option></select>`;
+  return html;
+}
+function renderItemsMaster(){
+  const wrap = document.getElementById('itemsList');
+  wrap.innerHTML = "";
+  STATE.items.forEach((it, idx)=>{
+    const div = document.createElement('div');
+    div.className = 'item-line';
+    div.innerHTML = `
+      <div class="row">
+        <div class="field"><label>Nama barang</label><input type="text" data-f="name" data-i="${idx}" value="${escapeHtml(it.name)}"></div>
+        <div class="field" style="max-width:110px;"><label>Satuan</label><input type="text" data-f="unit" data-i="${idx}" value="${escapeHtml(it.unit)}"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Kategori</label>${categorySelectHtml(idx, it.category)}</div>
+      </div>
+      <button class="btn ghost" data-remove="${idx}">Hapus barang ini</button>
+    `;
+    wrap.appendChild(div);
+  });
+  wrap.querySelectorAll('input[data-f]').forEach(inp=>{
+    inp.addEventListener('input', ()=>{
+      STATE.items[+inp.dataset.i][inp.dataset.f] = inp.value;
+    });
+  });
+  wrap.querySelectorAll('select[data-f="category"]').forEach(sel=>{
+    sel.addEventListener('change', ()=>{
+      const idx = +sel.dataset.i;
+      if(sel.value === '__new__'){
+        const name = (window.prompt('Nama kategori baru:')||'').trim();
+        if(name){
+          if(!allCategoryOptions().includes(name)){
+            STATE.customCategories.push(name);
+          }
+          STATE.items[idx].category = name;
+        }
+        renderItemsMaster();
+        return;
+      }
+      STATE.items[idx].category = sel.value;
+    });
+  });
+  wrap.querySelectorAll('[data-remove]').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      STATE.items.splice(+b.dataset.remove,1);
+      renderItemsMaster(); renderStockForms();
+    });
+  });
+}
+function escapeHtml(s){ return String(s||"").replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+document.getElementById('btnAddItem').addEventListener('click', ()=>{
+  STATE.items.push({id: 'itm_'+uid(), name:"Barang Baru", unit:"pcs", category:"Operasional"});
+  renderItemsMaster();
+});
+document.getElementById('btnSaveItems').addEventListener('click', async ()=>{
+  try{
+    await api('saveItems', {items: STATE.items});
+    cacheState();
+    renderStockForms();
+    toast("Master barang tersimpan");
+  }catch(e){ toast("Gagal simpan: "+e.message); }
+});
+
+/* ---------------- STOCK FORMS (awal / mingguan / akhir) ---------------- */
+async function resizeImage(file, maxW, maxH, opts){
+  maxH = maxH || maxW; // cap height too, so tall/strip photos (e.g. nota) don't produce huge canvases
+  opts = opts || {};
+  // Google Sheets has a HARD limit of 50,000 characters per cell. Photos are stored as a data-URL
+  // string directly in a cell, so single-cell photos (barang) must stay well under that limit.
+  // Nota photos are split across several cells on the backend (see code.gs), so they can use a
+  // much bigger budget here for a sharper, more readable receipt.
+  const MAX_BASE64_CHARS = opts.maxChars || 42000;
+  const qualityFloor = opts.qualityFloor != null ? opts.qualityFloor : 0.35;
+  const qualityStep = opts.qualityStep || 0.08;
+  return new Promise((resolve,reject)=>{
+    const img = new Image();
+    const reader = new FileReader();
+    reader.onload = ()=>{ img.src = reader.result; };
+    img.onload = ()=>{
+      const scale = Math.min(1, maxW/img.width, maxH/img.height);
+      const w = Math.max(1, Math.round(img.width*scale)), h = Math.max(1, Math.round(img.height*scale));
+      const cv = document.createElement('canvas'); cv.width=w; cv.height=h;
+      cv.getContext('2d').drawImage(img,0,0,w,h);
+      let quality = opts.startQuality || 0.6;
+      let dataUrl = cv.toDataURL('image/jpeg', quality);
+      // If still too large (e.g. very tall receipt / high-res camera photo), shrink further.
+      let attempts = 0;
+      while(dataUrl.length > MAX_BASE64_CHARS && attempts < 14){
+        attempts++;
+        if(quality > qualityFloor){
+          quality -= qualityStep;
+        } else {
+          const cv2 = document.createElement('canvas');
+          cv2.width = Math.max(1, Math.round(cv.width*0.7));
+          cv2.height = Math.max(1, Math.round(cv.height*0.7));
+          cv2.getContext('2d').drawImage(cv,0,0,cv2.width,cv2.height);
+          cv.width = cv2.width; cv.height = cv2.height;
+          cv.getContext('2d').drawImage(cv2,0,0);
+        }
+        dataUrl = cv.toDataURL('image/jpeg', quality);
+      }
+      resolve(dataUrl);
+    };
+    img.onerror = reject;
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+// Nota (struk) punya tulisan kecil dan padat, jadi butuh resolusi & kualitas jauh lebih
+// tinggi daripada foto kondisi barang agar tetap terbaca saat dicetak 1 halaman penuh di PDF.
+// Ukurannya disimpan terpisah dalam beberapa sel di Google Sheets (lihat NOTA_PHOTO_CHUNKS di code.gs).
+function resizeNotaImage(file){
+  return resizeImage(file, 1500, 2600, { maxChars: 260000, startQuality: 0.85, qualityFloor: 0.55, qualityStep: 0.05 });
+}
+
+function itemRowTemplate(it, storeObj, withPhoto){
+  const val = storeObj[it.id] || {};
+  return `
+  <div class="item-line" data-item="${it.id}">
+    <div class="head">
+      <span class="name">${escapeHtml(it.name)}</span>
+      <span class="cat">${escapeHtml(it.category)} · ${escapeHtml(it.unit)}</span>
+    </div>
+    <div class="row">
+      <div class="field" style="max-width:140px;">
+        <label>Jumlah sisa (${escapeHtml(it.unit)})</label>
+        <input type="number" min="0" step="1" class="qty-input" value="${val.qty!=null?val.qty:''}">
+      </div>
+      ${withPhoto ? `
+      <div class="field">
+        <label>Foto kondisi stok</label>
+        <div class="photo-row">
+          ${val.photo ? `<img class="photo-thumb" src="${val.photo}">` : `<div class="photo-placeholder">Belum ada</div>`}
+          <input type="file" accept="image/*" capture="environment" class="photo-input">
+        </div>
+      </div>` : ``}
+    </div>
+  </div>`;
+}
+function bindItemRow(rowEl, it, storeObj, key){
+  const qtyInput = rowEl.querySelector('.qty-input');
+  qtyInput.addEventListener('input', ()=>{
+    storeObj[it.id] = storeObj[it.id] || {};
+    storeObj[it.id].qty = qtyInput.value === '' ? null : Number(qtyInput.value);
+  });
+  const photoInput = rowEl.querySelector('.photo-input');
+  if(photoInput){
+    photoInput.addEventListener('change', async ()=>{
+      if(!photoInput.files[0]) return;
+      const dataUrl = await resizeImage(photoInput.files[0], 900);
+      storeObj[it.id] = storeObj[it.id] || {};
+      storeObj[it.id].photo = dataUrl;
+      const row = photoInput.closest('.photo-row');
+      row.querySelector('.photo-thumb,.photo-placeholder').outerHTML = `<img class="photo-thumb" src="${dataUrl}">`;
+    });
+  }
+}
+function renderStockForms(){
+  // Stok awal
+  const awalWrap = document.getElementById('awalList');
+  awalWrap.innerHTML = "";
+  STATE.items.forEach(it=>{
+    awalWrap.insertAdjacentHTML('beforeend', itemRowTemplate(it, STATE.awal, true));
+  });
+  awalWrap.querySelectorAll('.item-line').forEach((row,idx)=>bindItemRow(row, STATE.items[idx], STATE.awal));
+  document.getElementById('awalInspector').value = STATE.awalInspector||"";
+
+  // Stok akhir
+  const akhirWrap = document.getElementById('akhirList');
+  akhirWrap.innerHTML = "";
+  STATE.items.forEach(it=>{
+    akhirWrap.insertAdjacentHTML('beforeend', itemRowTemplate(it, STATE.akhir, true));
+  });
+  akhirWrap.querySelectorAll('.item-line').forEach((row,idx)=>bindItemRow(row, STATE.items[idx], STATE.akhir));
+  document.getElementById('akhirInspector').value = STATE.akhirInspector||"";
+
+  // Mingguan (current in-progress entry uses a temp object)
+  renderWeeklyForm();
+  renderWeekHistory();
+
+  // Nota pembelian
+  renderNotaList();
+}
+
+let currentWeekValues = {};
+function renderWeeklyForm(){
+  const wrap = document.getElementById('mingguanList');
+  wrap.innerHTML = "";
+  STATE.items.forEach(it=>{
+    wrap.insertAdjacentHTML('beforeend', itemRowTemplate(it, currentWeekValues, false));
+  });
+  wrap.querySelectorAll('.item-line').forEach((row,idx)=>bindItemRow(row, STATE.items[idx], currentWeekValues));
+}
+function renderWeekHistory(){
+  const wrap = document.getElementById('weekHistory');
+  if(!STATE.weeks.length){ wrap.className='empty'; wrap.textContent='Belum ada data.'; return; }
+  wrap.className=''; wrap.innerHTML="";
+  STATE.weeks.slice().sort((a,b)=>a.week-b.week).forEach(w=>{
+    const div = document.createElement('div');
+    div.className='session-item';
+    div.innerHTML = `<span>Minggu ${w.week} — ${fmtDate(w.date)}</span><span class="meta">Diperiksa: ${escapeHtml(w.inspector||'-')}</span>`;
+    wrap.appendChild(div);
+  });
+}
+
+document.getElementById('btnSaveAwal').addEventListener('click', async ()=>{
+  if(!STATE.periodId){ toast("Muat periode dulu di tab Pengaturan"); return; }
+  STATE.awalInspector = document.getElementById('awalInspector').value.trim();
+  const date = document.getElementById('awalDate').value || STATE.periodStart;
+  try{
+    await api('saveEntry', {periodId: STATE.periodId, type:'awal', date, inspector: STATE.awalInspector, values: STATE.awal});
+    cacheState();
+    toast("Stok awal tersimpan");
+  }catch(e){ toast("Gagal simpan: "+e.message); }
+});
+
+document.getElementById('btnSaveAkhir').addEventListener('click', async ()=>{
+  if(!STATE.periodId){ toast("Muat periode dulu di tab Pengaturan"); return; }
+  STATE.akhirInspector = document.getElementById('akhirInspector').value.trim();
+  STATE.sigMonthly = sigCanvases.sigMonthly.toDataURL('image/png');
+  const date = document.getElementById('akhirDate').value || STATE.periodEnd;
+  try{
+    await api('saveEntry', {periodId: STATE.periodId, type:'akhir', date, inspector: STATE.akhirInspector, values: STATE.akhir, signature: STATE.sigMonthly});
+    cacheState();
+    toast("Stok akhir tersimpan");
+  }catch(e){ toast("Gagal simpan: "+e.message); }
+});
+
+document.getElementById('btnSaveWeek').addEventListener('click', async ()=>{
+  if(!STATE.periodId){ toast("Muat periode dulu di tab Pengaturan"); return; }
+  const week = Number(document.getElementById('weekNumber').value)||1;
+  const date = document.getElementById('weekDate').value || todayIso();
+  const inspector = document.getElementById('weekInspector').value.trim();
+  const sig = sigCanvases.sigWeekly.toDataURL('image/png');
+  const entry = {week, date, inspector, sig, values: JSON.parse(JSON.stringify(currentWeekValues))};
+  try{
+    await api('saveEntry', {periodId: STATE.periodId, type:'mingguan', week, date, inspector, values: currentWeekValues, signature: sig});
+    STATE.weeks = STATE.weeks.filter(w=>w.week!==week);
+    STATE.weeks.push(entry);
+    cacheState();
+    renderWeekHistory();
+    toast("Cek mingguan ke-"+week+" tersimpan");
+  }catch(e){ toast("Gagal simpan: "+e.message); }
+});
+
+/* ---------------- NOTA PEMBELIAN ---------------- */
+function notaRowTemplate(n){
+  return `
+  <div class="nota-line" data-nota="${n.id}">
+    <div class="row">
+      <div class="field" style="max-width:170px;">
+        <label>Tanggal pada nota</label>
+        <input type="date" class="nota-date" value="${n.date||''}">
+      </div>
+      <div class="field">
+        <label>Keterangan (opsional)</label>
+        <input type="text" class="nota-note" placeholder="Contoh: Belanja pantry & kebersihan" value="${escapeHtml(n.note||'')}">
+      </div>
+    </div>
+    <div class="photo-row">
+      ${n.photo ? `<img class="photo-thumb" src="${n.photo}">` : `<div class="photo-placeholder">Belum ada</div>`}
+      <input type="file" accept="image/*" capture="environment" class="nota-photo-input">
+      <button class="btn ghost" data-remove-nota="${n.id}">Hapus</button>
+    </div>
+  </div>`;
+}
+function renderNotaList(){
+  const wrap = document.getElementById('notaList');
+  if(!wrap) return;
+  wrap.innerHTML = "";
+  if(!STATE.notaPembelian.length){
+    wrap.insertAdjacentHTML('beforeend', `<div class="empty">Belum ada nota pembelian untuk periode ini.</div>`);
+  }
+  STATE.notaPembelian.forEach(n=>{
+    wrap.insertAdjacentHTML('beforeend', notaRowTemplate(n));
+  });
+  wrap.querySelectorAll('.nota-line').forEach(rowEl=>{
+    const id = rowEl.dataset.nota;
+    const n = STATE.notaPembelian.find(x=>x.id===id);
+    rowEl.querySelector('.nota-date').addEventListener('input', (e)=>{ n.date = e.target.value; });
+    rowEl.querySelector('.nota-note').addEventListener('input', (e)=>{ n.note = e.target.value; });
+    const photoInput = rowEl.querySelector('.nota-photo-input');
+    photoInput.addEventListener('change', async ()=>{
+      if(!photoInput.files[0]) return;
+      const row = photoInput.closest('.photo-row');
+      const thumbEl = row.querySelector('.photo-thumb,.photo-placeholder');
+      const originalHtml = thumbEl.outerHTML;
+      thumbEl.outerHTML = `<div class="photo-placeholder">Memproses...</div>`;
+      try{
+        const dataUrl = await resizeNotaImage(photoInput.files[0]);
+        n.photo = dataUrl;
+        row.querySelector('.photo-thumb,.photo-placeholder').outerHTML = `<img class="photo-thumb" src="${dataUrl}">`;
+      }catch(e){
+        row.querySelector('.photo-thumb,.photo-placeholder').outerHTML = originalHtml;
+        toast("Gagal memproses foto nota: "+e.message);
+      }
+    });
+  });
+  wrap.querySelectorAll('[data-remove-nota]').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      STATE.notaPembelian = STATE.notaPembelian.filter(x=>x.id!==b.dataset.removeNota);
+      renderNotaList();
+    });
+  });
+}
+document.getElementById('btnAddNota').addEventListener('click', ()=>{
+  STATE.notaPembelian.push({id:'nota_'+uid(), date: STATE.periodStart || todayIso(), note:'', photo:''});
+  renderNotaList();
+});
+document.getElementById('btnSaveNota').addEventListener('click', async ()=>{
+  if(!STATE.periodId){ toast("Muat periode dulu di tab Pengaturan"); return; }
+  try{
+    await api('saveNota', {periodId: STATE.periodId, notas: STATE.notaPembelian});
+    cacheState();
+    toast("Nota pembelian tersimpan");
+  }catch(e){ toast("Gagal simpan: "+e.message); }
+});
+
+/* ---------------- SIGNATURE PADS ---------------- */
+const sigCanvases = {};
+function setupSignaturePad(id){
+  const canvas = document.getElementById(id);
+  function resize(){
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * 2; canvas.height = rect.height * 2;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(2,2); ctx.lineWidth=2; ctx.lineCap='round'; ctx.strokeStyle = '#1E2A22';
+  }
+  resize();
+  let drawing=false, last=null;
+  function pos(e){
+    const rect = canvas.getBoundingClientRect();
+    const t = e.touches ? e.touches[0] : e;
+    return {x: t.clientX-rect.left, y: t.clientY-rect.top};
+  }
+  function start(e){ drawing=true; last=pos(e); e.preventDefault(); }
+  function move(e){
+    if(!drawing) return;
+    const p = pos(e);
+    const ctx = canvas.getContext('2d');
+    ctx.beginPath(); ctx.moveTo(last.x,last.y); ctx.lineTo(p.x,p.y); ctx.stroke();
+    last = p; e.preventDefault();
+  }
+  function end(){ drawing=false; }
+  canvas.addEventListener('mousedown', start);
+  canvas.addEventListener('mousemove', move);
+  window.addEventListener('mouseup', end);
+  canvas.addEventListener('touchstart', start, {passive:false});
+  canvas.addEventListener('touchmove', move, {passive:false});
+  canvas.addEventListener('touchend', end);
+  sigCanvases[id] = canvas;
+}
+document.querySelectorAll('[data-clear]').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    const canvas = sigCanvases[b.dataset.clear];
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+  });
+});
+
+/* ---------------- FORECAST ---------------- */
+function computeForecastRows(){
+  const start = new Date(STATE.periodStart);
+  const end = new Date(STATE.periodEnd);
+  const rows = [];
+  STATE.items.forEach(it=>{
+    const points = [];
+    if(STATE.awal[it.id] && STATE.awal[it.id].qty!=null){
+      points.push({date: new Date(document.getElementById('awalDate').value||STATE.periodStart), qty: Number(STATE.awal[it.id].qty)});
+    }
+    STATE.weeks.forEach(w=>{
+      if(w.values[it.id] && w.values[it.id].qty!=null){
+        points.push({date:new Date(w.date), qty:Number(w.values[it.id].qty)});
+      }
+    });
+    if(STATE.akhir[it.id] && STATE.akhir[it.id].qty!=null){
+      points.push({date: new Date(document.getElementById('akhirDate').value||STATE.periodEnd), qty: Number(STATE.akhir[it.id].qty)});
+    }
+    points.sort((a,b)=>a.date-b.date);
+
+    let row = {name: it.name, unit: it.unit, awal:'-', akhir:'-', rate:null, daysLeft:null, emptyDate:null, reorder:'-', status:'ok'};
+    if(points.length>=1){ row.awal = points[0].qty; row.akhir = points[points.length-1].qty; }
+    if(points.length>=2){
+      const first = points[0], lastP = points[points.length-1];
+      const days = Math.max(1, (lastP.date-first.date)/86400000);
+      const consumed = first.qty - lastP.qty;
+      const rate = consumed>0 ? consumed/days : 0;
+      row.rate = rate;
+      if(rate>0){
+        const daysLeft = lastP.qty / rate;
+        row.daysLeft = Math.round(daysLeft);
+        const empty = new Date(lastP.date.getTime() + daysLeft*86400000);
+        row.emptyDate = empty;
+        row.reorder = Math.max(0, Math.ceil(rate*30 - lastP.qty));
+        if(empty <= new Date(end.getTime()+5*86400000)) row.status='danger';
+        else if(empty <= new Date(end.getTime()+20*86400000)) row.status='watch';
+        else row.status='ok';
+      } else {
+        row.daysLeft = null; row.reorder = 0; row.status='ok';
+      }
+    }
+    rows.push(row);
+  });
+  return rows;
+}
+function statusLabel(s){
+  return s==='danger' ? '<span class="badge danger">Segera Habis</span>'
+       : s==='watch' ? '<span class="badge watch">Perlu Dipantau</span>'
+       : '<span class="badge ok">Aman</span>';
+}
+function runForecast(){
+  if(!STATE.periodId){ document.getElementById('forecastMeta').textContent='Muat periode terlebih dahulu di tab Pengaturan.'; return; }
+  document.getElementById('forecastMeta').textContent = 'Periode '+fmtDate(STATE.periodStart)+' – '+fmtDate(STATE.periodEnd)+'. Dihitung dari data stok awal, '+STATE.weeks.length+' kali cek mingguan, dan stok akhir.';
+  const rows = computeForecastRows();
+  const body = document.getElementById('forecastBody');
+  body.innerHTML = "";
+  rows.forEach(r=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${escapeHtml(r.name)}</td>
+      <td class="num">${r.awal}</td>
+      <td class="num">${r.akhir}</td>
+      <td class="num">${r.rate!=null ? r.rate.toFixed(2) : '-'}</td>
+      <td class="num">${r.daysLeft!=null ? r.daysLeft : '-'}</td>
+      <td>${r.emptyDate ? fmtDate(r.emptyDate) : '-'}</td>
+      <td class="num">${r.reorder} ${escapeHtml(r.unit)}</td>
+      <td>${statusLabel(r.status)}</td>`;
+    body.appendChild(tr);
+  });
+  // signature previews
+  document.getElementById('sigWeeklyPreviewWrap').innerHTML = STATE.weeks.length
+    ? `<img src="${STATE.weeks[STATE.weeks.length-1].sig}" style="max-width:220px;border:1px solid var(--line);border-radius:3px;">
+       <div class="hint">${escapeHtml(STATE.weeks[STATE.weeks.length-1].inspector||'-')} · Minggu ${STATE.weeks[STATE.weeks.length-1].week}</div>`
+    : `<div class="hint">Belum ada.</div>`;
+  document.getElementById('sigMonthlyPreviewWrap').innerHTML = STATE.sigMonthly
+    ? `<img src="${STATE.sigMonthly}" style="max-width:220px;border:1px solid var(--line);border-radius:3px;">
+       <div class="hint">${escapeHtml(STATE.akhirInspector||'-')}</div>`
+    : `<div class="hint">Belum ada.</div>`;
+
+  renderAkhirPhotoGrid();
+  renderNotaPhotoGrid();
+}
+
+function renderAkhirPhotoGrid(){
+  const grid = document.getElementById('akhirPhotoGrid');
+  const card = document.getElementById('pdfAkhirPhotos');
+  const withPhoto = STATE.items.filter(it => STATE.akhir[it.id] && STATE.akhir[it.id].photo);
+  if(!withPhoto.length){
+    card.style.display = 'none';
+    grid.innerHTML = '';
+    return;
+  }
+  card.style.display = '';
+  grid.innerHTML = withPhoto.map(it=>{
+    const v = STATE.akhir[it.id];
+    return `<div class="pg-item">
+      <img src="${v.photo}">
+      <div class="pg-name">${escapeHtml(it.name)}</div>
+      <div class="pg-meta">${v.qty!=null?v.qty:'-'} ${escapeHtml(it.unit)} · ${escapeHtml(it.category)}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderNotaPhotoGrid(){
+  const grid = document.getElementById('notaPhotoGrid');
+  const card = document.getElementById('pdfNotaPhotos');
+  const withPhoto = (STATE.notaPembelian||[]).filter(n => n.photo);
+  if(!withPhoto.length){
+    card.style.display = 'none';
+    grid.innerHTML = '';
+    return;
+  }
+  card.style.display = '';
+  grid.innerHTML = withPhoto.slice().sort((a,b)=> (a.date||'').localeCompare(b.date||'')).map(n=>{
+    return `<div class="pg-item">
+      <img src="${n.photo}">
+      <div class="pg-name">${fmtDate(n.date)}</div>
+      <div class="pg-meta">${escapeHtml(n.note||'')}</div>
+    </div>`;
+  }).join('');
+}
+document.getElementById('btnRunForecast').addEventListener('click', runForecast);
+
+// Tunggu semua <img> di dalam elemen benar-benar selesai dimuat/decode,
+// supaya html2canvas tidak menangkap gambar yang masih kosong (terutama
+// foto base64 berukuran besar yang butuh waktu untuk decode).
+function waitForImages(el){
+  const imgs = Array.from(el.querySelectorAll('img'));
+  return Promise.all(imgs.map(img=>{
+    if(img.complete && img.naturalWidth) return Promise.resolve();
+    return new Promise(resolve=>{
+      img.addEventListener('load', resolve, {once:true});
+      img.addEventListener('error', resolve, {once:true});
+    });
+  }));
+}
+
+// Deteksi format gambar dari data URI, supaya addImage() jsPDF cocok
+// (foto dari kamera HP bisa JPEG maupun PNG).
+function imgFormatFromDataUri(uri){
+  const m = /^data:image\/(\w+);/.exec(uri || '');
+  if(!m) return 'JPEG';
+  const t = m[1].toUpperCase();
+  if(t === 'JPG') return 'JPEG';
+  if(t === 'PNG') return 'PNG';
+  if(t === 'WEBP') return 'WEBP';
+  return 'JPEG';
+}
+
+function loadImageSize(dataUri){
+  return new Promise((resolve)=>{
+    const img = new Image();
+    img.onload = ()=> resolve({width: img.naturalWidth, height: img.naturalHeight});
+    img.onerror = ()=> resolve(null);
+    img.src = dataUri;
+  });
+}
+
+async function buildReportPdf(){
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF('p','mm','a4');
+  const pageW = pdf.internal.pageSize.getWidth();
+  const pageH = pdf.internal.pageSize.getHeight();
+  let firstPage = true;
+
+  async function addSectionPages(el){
+    if(!el) return;
+    await waitForImages(el);
+    const canvas = await html2canvas(el, {scale:2, backgroundColor:'#ffffff'});
+    const imgData = canvas.toDataURL('image/jpeg', 0.92);
+    const imgH = canvas.height * pageW / canvas.width;
+    let heightLeft = imgH, position = 0;
+    if(!firstPage) pdf.addPage();
+    firstPage = false;
+    pdf.addImage(imgData,'JPEG',0,position,pageW,imgH);
+    heightLeft -= pageH;
+    while(heightLeft > 0){
+      position = heightLeft - imgH;
+      pdf.addPage();
+      pdf.addImage(imgData,'JPEG',0,position,pageW,imgH);
+      heightLeft -= pageH;
+    }
+  }
+
+  // Setiap nota pembelian mendapat 1 halaman penuh, foto ditampilkan
+  // sebesar mungkin (bukan thumbnail kecil di grid) supaya tulisan pada
+  // nota tetap bisa dibaca.
+  async function addNotaFullPages(){
+    const notas = (STATE.notaPembelian || [])
+      .filter(n => n && n.photo)
+      .slice()
+      .sort((a,b)=> (a.date||'').localeCompare(b.date||''));
+    if(!notas.length) return;
+
+    const margin = 14;
+    for(const n of notas){
+      if(!firstPage) pdf.addPage();
+      firstPage = false;
+
+      pdf.setFont(undefined,'bold');
+      pdf.setFontSize(13);
+      pdf.setTextColor(31,78,54); // --green-deep
+      pdf.text('Lampiran: Foto Nota Pembelian', margin, 14);
+
+      pdf.setFont(undefined,'normal');
+      pdf.setFontSize(10.5);
+      pdf.setTextColor(30,42,34); // --ink
+      pdf.text(fmtDate(n.date), margin, 21);
+
+      let topY = 26;
+      if(n.note){
+        pdf.setFontSize(9.5);
+        pdf.setTextColor(91,107,95); // --ink-soft
+        const noteLines = pdf.splitTextToSize(n.note, pageW - margin*2);
+        pdf.text(noteLines, margin, topY);
+        topY += noteLines.length * 4.5 + 3;
+      }
+
+      const availW = pageW - margin*2;
+      const availH = pageH - topY - margin;
+      let drawW = availW, drawH = availH;
+
+      const size = await loadImageSize(n.photo);
+      if(size && size.width && size.height){
+        const ratio = size.width / size.height;
+        drawH = drawW / ratio;
+        if(drawH > availH){ drawH = availH; drawW = drawH * ratio; }
+      }
+      const x = margin + (availW - drawW) / 2;
+      const y = topY + (availH - drawH) / 2;
+      try{
+        pdf.addImage(n.photo, imgFormatFromDataUri(n.photo), x, y, drawW, drawH);
+      }catch(e){
+        pdf.setFontSize(10);
+        pdf.setTextColor(200,60,60);
+        pdf.text('(Gagal memuat foto nota ini)', margin, topY + 10);
+      }
+    }
+  }
+
+  await addSectionPages(document.getElementById('pdfArea'));
+  const akhirCard = document.getElementById('pdfAkhirPhotos');
+  if(akhirCard.style.display !== 'none') await addSectionPages(akhirCard);
+  await addNotaFullPages();
+
+  return pdf;
+}
+
+document.getElementById('btnExportPdf').addEventListener('click', async ()=>{
+  toast("Menyiapkan PDF...");
+  runForecast();
+  const pdf = await buildReportPdf();
+  pdf.save('Laporan-Stok-CampangRaya-'+(STATE.periodId||'periode')+'.pdf');
+  window._lastPdfBase64 = pdf.output('datauristring').split(',')[1];
+});
+
+document.getElementById('btnEmailPdf').addEventListener('click', async ()=>{
+  const to = (document.getElementById('reportEmail').value || CFG.reportEmail || '').trim();
+  if(!to){ toast("Isi email tujuan di tab Pengaturan dulu"); return; }
+  toast("Membuat & mengirim PDF...");
+  runForecast();
+  const pdf = await buildReportPdf();
+  const base64 = pdf.output('datauristring').split(',')[1];
+  try{
+    await api('emailReport', {
+      to, subject: 'Laporan Stok Operasional - Cabang Campang Raya - '+(STATE.periodId||''),
+      body: 'Terlampir laporan stok dan forecast kebutuhan bulan depan untuk cabang Campang Raya, periode '+fmtDate(STATE.periodStart)+' - '+fmtDate(STATE.periodEnd)+'.',
+      filename: 'Laporan-Stok-CampangRaya-'+(STATE.periodId||'periode')+'.pdf',
+      pdfBase64: base64
+    });
+    toast("Laporan terkirim ke "+to);
+  }catch(e){ toast("Gagal kirim email: "+e.message); }
+});
+
+/* ---------------- RIWAYAT ---------------- */
+async function refreshPeriods(){
+  const wrap = document.getElementById('periodListArea');
+  wrap.className='empty'; wrap.textContent='Memuat...';
+  try{
+    const res = await api('listPeriods', {});
+    const periods = res.periods || [];
+    if(!periods.length){ wrap.textContent='Belum ada periode tersimpan.'; return; }
+    wrap.className=''; wrap.innerHTML='';
+    periods.forEach(p=>{
+      const div = document.createElement('div');
+      div.className='session-item';
+      div.innerHTML = `<span>${p.periodId} <span class="meta">(${fmtDate(p.start)} – ${fmtDate(p.end)})</span></span>`;
+      const btn = document.createElement('button');
+      btn.className='btn secondary'; btn.textContent='Muat';
+      btn.style.padding='6px 10px'; btn.style.fontSize='12px';
+      btn.addEventListener('click', ()=> loadSpecificPeriod(p));
+      div.appendChild(btn);
+      wrap.appendChild(div);
+    });
+  }catch(e){ wrap.textContent = 'Gagal memuat daftar periode: '+e.message; }
+}
+async function loadSpecificPeriod(p){
+  document.getElementById('periodStart').value = isoDate(new Date(p.start));
+  document.getElementById('periodEnd').value = isoDate(new Date(p.end));
+  document.getElementById('btnLoadPeriod').click();
+  document.querySelector('#tabs button[data-tab="awal"]').click();
+}
+document.getElementById('btnRefreshPeriods').addEventListener('click', refreshPeriods);
+
+/* ---------------- PULL DATA FROM SHEET ---------------- */
+async function pullPeriodData(){
+  try{
+    const res = await api('getData', {periodId: STATE.periodId});
+    if(res.items && res.items.length) STATE.items = res.items;
+    STATE.awal = res.awal || {};
+    STATE.akhir = res.akhir || {};
+    STATE.weeks = res.weeks || [];
+    STATE.awalInspector = (res.awalMeta&&res.awalMeta.inspector)||"";
+    STATE.akhirInspector = (res.akhirMeta&&res.akhirMeta.inspector)||"";
+    STATE.sigMonthly = (res.akhirMeta&&res.akhirMeta.signature)||"";
+    STATE.notaPembelian = res.notas || STATE.notaPembelian || [];
+    renderStockForms();
+  }catch(e){
+    toast("Belum bisa memuat dari spreadsheet (cek koneksi). Menggunakan data lokal.");
+  }
+}
+
+/* ---------------- INIT ---------------- */
+async function init(){
+  loadConfig();
+  loadCache();
+  if(!STATE.items.length) STATE.items = JSON.parse(JSON.stringify(SEED_ITEMS));
+
+  setupSignaturePad('sigWeekly');
+  setupSignaturePad('sigMonthly');
+
+  const p = computePeriodFor(new Date());
+  document.getElementById('periodStart').value = isoDate(p.start);
+  document.getElementById('periodEnd').value = isoDate(p.end);
+  STATE.periodStart = STATE.periodStart || isoDate(p.start);
+  STATE.periodEnd = STATE.periodEnd || isoDate(p.end);
+  STATE.periodId = STATE.periodId || periodIdFrom(STATE.periodStart);
+  document.getElementById('awalDate').value = STATE.periodStart;
+  document.getElementById('akhirDate').value = STATE.periodEnd;
+  document.getElementById('weekDate').value = todayIso();
+
+  refreshPeriodPill();
+  renderItemsMaster();
+  renderStockForms();
+
+  document.getElementById('btnSaveSetting').addEventListener('click', ()=>{
+    saveConfig(); toast("Email laporan tersimpan");
+  });
+
+  if(CFG.scriptUrl){ pullPeriodData(); }
+}
+init();
+
+})();
+</script>
+</body>
+</html>
