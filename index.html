@@ -162,6 +162,23 @@
   }
   #pdfArea{background:#fff;}
   #pdfArea h2{border-bottom:2px solid var(--green); padding-bottom:6px;}
+
+  .sync-banner{
+    display:flex; align-items:center; justify-content:center; gap:10px;
+    padding:8px 14px; font-size:12.5px; text-align:center;
+  }
+  .sync-banner.loading{background:#EEF2EE; color:var(--ink-soft);}
+  .sync-banner.ok{background:#E4F3E9; color:var(--green-deep);}
+  .sync-banner.err{background:#FDECEA; color:#9A2E22; font-weight:600;}
+  .sync-banner button{
+    border:1px solid currentColor; background:transparent; color:inherit;
+    border-radius:3px; padding:3px 10px; font-size:12px; cursor:pointer;
+  }
+  .period-pill-row{display:flex; align-items:center; gap:8px;}
+  .btn-refresh{
+    background:transparent; border:1px solid #C9DACB; color:#fff; border-radius:3px;
+    padding:6px 9px; font-size:12px; cursor:pointer;
+  }
 </style>
 </head>
 <body>
@@ -170,11 +187,15 @@
   <div class="brand">
     <div>
       <h1>Stok Barang Operasional</h1>
-      <div class="sub">Campang Raya</div>
+      <div class="sub">Cabang Campang Raya · CV. Chandra Perdana Abadi</div>
     </div>
-    <div class="period-pill" id="periodPill">–</div>
+    <div class="period-pill-row">
+      <div class="period-pill" id="periodPill">–</div>
+      <button class="btn-refresh" id="btnManualSync" title="Ambil data terbaru dari server">⟳ Segarkan</button>
+    </div>
   </div>
 </header>
+<div id="syncBanner" class="sync-banner" style="display:none;"></div>
 
 <nav class="tabs" id="tabs">
   <button data-tab="setting" class="active">Pengaturan</button>
@@ -781,6 +802,7 @@ document.getElementById('btnSaveAwal').addEventListener('click', async ()=>{
     await api('saveEntry', {periodId: STATE.periodId, type:'awal', date, inspector: STATE.awalInspector, values: STATE.awal});
     cacheState();
     toast("Stok awal tersimpan");
+    syncSavedNotice("Stok awal tersimpan");
   }catch(e){ toast("Gagal simpan: "+e.message); }
 });
 
@@ -793,6 +815,7 @@ document.getElementById('btnSaveAkhir').addEventListener('click', async ()=>{
     await api('saveEntry', {periodId: STATE.periodId, type:'akhir', date, inspector: STATE.akhirInspector, values: STATE.akhir, signature: STATE.sigMonthly});
     cacheState();
     toast("Stok akhir tersimpan");
+    syncSavedNotice("Stok akhir tersimpan");
   }catch(e){ toast("Gagal simpan: "+e.message); }
 });
 
@@ -810,6 +833,7 @@ document.getElementById('btnSaveWeek').addEventListener('click', async ()=>{
     cacheState();
     renderWeekHistory();
     toast("Cek mingguan ke-"+week+" tersimpan");
+    syncSavedNotice("Cek mingguan ke-"+week+" tersimpan");
   }catch(e){ toast("Gagal simpan: "+e.message); }
 });
 
@@ -883,6 +907,7 @@ document.getElementById('btnSaveNota').addEventListener('click', async ()=>{
     await api('saveNota', {periodId: STATE.periodId, notas: STATE.notaPembelian});
     cacheState();
     toast("Nota pembelian tersimpan");
+    syncSavedNotice("Nota pembelian tersimpan");
   }catch(e){ toast("Gagal simpan: "+e.message); }
 });
 
@@ -1233,22 +1258,69 @@ async function loadSpecificPeriod(p){
 document.getElementById('btnRefreshPeriods').addEventListener('click', refreshPeriods);
 
 /* ---------------- PULL DATA FROM SHEET ---------------- */
-async function pullPeriodData(){
-  try{
-    const res = await api('getData', {periodId: STATE.periodId});
-    if(res.items && res.items.length) STATE.items = res.items;
-    STATE.awal = res.awal || {};
-    STATE.akhir = res.akhir || {};
-    STATE.weeks = res.weeks || [];
-    STATE.awalInspector = (res.awalMeta&&res.awalMeta.inspector)||"";
-    STATE.akhirInspector = (res.akhirMeta&&res.akhirMeta.inspector)||"";
-    STATE.sigMonthly = (res.akhirMeta&&res.akhirMeta.signature)||"";
-    STATE.notaPembelian = res.notas || STATE.notaPembelian || [];
-    renderStockForms();
-  }catch(e){
-    toast("Belum bisa memuat dari spreadsheet (cek koneksi). Menggunakan data lokal.");
+function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+function setSyncStatus(kind, message, opts){
+  opts = opts || {};
+  const el = document.getElementById('syncBanner');
+  el.className = 'sync-banner ' + kind;
+  el.innerHTML = escapeHtml(message) + (opts.retry ? ' <button id="syncRetryBtn">Coba Lagi</button>' : '');
+  el.style.display = 'flex';
+  if(opts.retry){
+    document.getElementById('syncRetryBtn').addEventListener('click', ()=> pullPeriodData());
+  }
+  if(kind === 'ok' && opts.autoHide !== false){
+    setTimeout(()=>{ if(el.className.indexOf('ok') > -1) el.style.display = 'none'; }, 3500);
   }
 }
+function syncSavedNotice(label){
+  const now = new Date();
+  setSyncStatus('ok', label + ' ke server · pukul ' + now.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}));
+}
+
+let syncInFlight = false;
+// Menarik data terbaru dari spreadsheet. Dicoba beberapa kali (koneksi HP/wifi kadang putus-nyambung)
+// dan status sinkronisasi selalu ditampilkan jelas di banner atas — supaya data yang "belum sempat
+// tersinkron" tidak disalahartikan sebagai "belum diisi" saat dibuka dari perangkat lain.
+async function pullPeriodData(){
+  if(syncInFlight) return false;
+  syncInFlight = true;
+  const attempts = 3;
+  let lastErr = null;
+  for(let i=0; i<attempts; i++){
+    setSyncStatus('loading', i===0
+      ? 'Menyinkronkan data dari server…'
+      : 'Menyinkronkan data dari server… (percobaan '+(i+1)+' dari '+attempts+')');
+    try{
+      const res = await api('getData', {periodId: STATE.periodId});
+      if(res.items && res.items.length) STATE.items = res.items;
+      STATE.awal = res.awal || {};
+      STATE.akhir = res.akhir || {};
+      STATE.weeks = res.weeks || [];
+      STATE.awalInspector = (res.awalMeta&&res.awalMeta.inspector)||"";
+      STATE.akhirInspector = (res.akhirMeta&&res.akhirMeta.inspector)||"";
+      STATE.sigMonthly = (res.akhirMeta&&res.akhirMeta.signature)||"";
+      STATE.notaPembelian = res.notas || STATE.notaPembelian || [];
+      renderStockForms();
+      cacheState();
+      const now = new Date();
+      setSyncStatus('ok', 'Tersinkron dari server · pukul '+now.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}));
+      syncInFlight = false;
+      return true;
+    }catch(e){
+      lastErr = e;
+      if(i < attempts-1) await sleep(1200);
+    }
+  }
+  setSyncStatus(
+    'err',
+    'Gagal memuat data terbaru dari server — data yang tampil mungkin belum lengkap/terbaru. ' + (lastErr ? lastErr.message : ''),
+    {retry:true}
+  );
+  syncInFlight = false;
+  return false;
+}
+document.getElementById('btnManualSync').addEventListener('click', ()=> pullPeriodData());
 
 /* ---------------- INIT ---------------- */
 async function init(){
