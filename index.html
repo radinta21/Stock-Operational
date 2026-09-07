@@ -440,7 +440,13 @@ function fmtDate(d){
   if(isNaN(dt)) return "-";
   return dt.toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
 }
-function isoDate(d){ return d.toISOString().slice(0,10); }
+function isoDate(d){
+  // PENTING: jangan pakai toISOString() di sini — itu mengonversi ke UTC dan bisa
+  // menggeser tanggal mundur 1 hari untuk zona waktu WIB (mis. 11 Agu jadi 10 Agu).
+  // Ambil komponen tanggal LOKAL langsung supaya batas periode (tanggal 11) selalu tepat.
+  const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), day = String(d.getDate()).padStart(2,'0');
+  return y+"-"+m+"-"+day;
+}
 function todayIso(){ return isoDate(new Date()); }
 function toast(msg, ms){
   const t = document.createElement('div');
@@ -516,7 +522,15 @@ function applyPeriodFromId(pid){
   document.getElementById('weekDate').value = todayIso();
 }
 async function loadPeriod(pid){
+  const isDifferentPeriod = STATE.periodId && STATE.periodId !== pid;
   applyPeriodFromId(pid);
+  if(isDifferentPeriod){
+    // Ganti ke periode lain: kosongkan dulu data periode sebelumnya di layar supaya
+    // tidak tercampur, baru diisi ulang oleh data periode baru dari server (lihat pullPeriodData).
+    STATE.awal = {}; STATE.akhir = {}; STATE.weeks = []; STATE.notaPembelian = [];
+    STATE.awalInspector = ""; STATE.akhirInspector = ""; STATE.sigMonthly = "";
+    renderStockForms();
+  }
   await pullPeriodData();
   toast("Periode "+periodLabel(pid)+" dimuat");
 }
@@ -1388,17 +1402,35 @@ async function loadSpecificPeriod(p){
 document.getElementById('btnRefreshPeriods').addEventListener('click', refreshPeriods);
 
 /* ---------------- PULL DATA FROM SHEET ---------------- */
+// Gabungkan data barang per-itemId: nilai dari server (res) dianggap paling valid/terbaru
+// (itulah yang membuat sinkron antar-HP jalan), TAPI kalau server belum punya suatu item
+// (misalnya baru saja diisi di HP ini dan belum sempat tersinkron), nilai lokal tetap
+// dipakai — supaya isian yang sudah ada TIDAK PERNAH tertimpa jadi kosong.
+function mergeStore(local, server){
+  const merged = Object.assign({}, local||{});
+  Object.keys(server||{}).forEach(k=>{ merged[k] = server[k]; });
+  return merged;
+}
+// Sama seperti mergeStore, tapi untuk data berbentuk array (cek mingguan / nota pembelian),
+// digabung berdasarkan key unik masing-masing (nomor minggu / id nota).
+function mergeByKey(localArr, serverArr, keyFn){
+  const map = {};
+  (localArr||[]).forEach(item=>{ map[keyFn(item)] = item; });
+  (serverArr||[]).forEach(item=>{ map[keyFn(item)] = item; });
+  return Object.values(map);
+}
 async function pullPeriodData(){
   try{
     const res = await api('getData', {periodId: STATE.periodId});
     if(res.items && res.items.length) STATE.items = res.items;
-    STATE.awal = res.awal || {};
-    STATE.akhir = res.akhir || {};
-    STATE.weeks = res.weeks || [];
-    STATE.awalInspector = (res.awalMeta&&res.awalMeta.inspector)||"";
-    STATE.akhirInspector = (res.akhirMeta&&res.akhirMeta.inspector)||"";
-    STATE.sigMonthly = (res.akhirMeta&&res.akhirMeta.signature)||"";
-    STATE.notaPembelian = res.notas || STATE.notaPembelian || [];
+    STATE.awal = mergeStore(STATE.awal, res.awal);
+    STATE.akhir = mergeStore(STATE.akhir, res.akhir);
+    STATE.weeks = mergeByKey(STATE.weeks, res.weeks, w=>w.week);
+    STATE.notaPembelian = mergeByKey(STATE.notaPembelian, res.notas, n=>n.id);
+    if(res.awalMeta && res.awalMeta.inspector) STATE.awalInspector = res.awalMeta.inspector;
+    if(res.akhirMeta && res.akhirMeta.inspector) STATE.akhirInspector = res.akhirMeta.inspector;
+    if(res.akhirMeta && res.akhirMeta.signature) STATE.sigMonthly = res.akhirMeta.signature;
+    cacheState();
     renderStockForms();
   }catch(e){
     toast("Belum bisa memuat dari spreadsheet (cek koneksi). Menggunakan data lokal.");
