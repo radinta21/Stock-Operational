@@ -59,13 +59,6 @@
     white-space:nowrap;
   }
 
-  @media (max-width:600px){
-    header.top .brand{flex-direction:column; align-items:stretch;}
-    header.top .period-pill-row{width:100%; justify-content:space-between; margin-top:12px;}
-    header.top .period-pill{flex:1; text-align:center; white-space:normal;}
-    header.top h1{font-size:18px; line-height:1.25;}
-  }
-
   nav.tabs{
     display:flex; overflow-x:auto;
     background:var(--tab-bg);
@@ -96,6 +89,10 @@
   .card h2{font-size:17px;}
   .card h3{font-size:14.5px; margin-bottom:2px;}
   .hint{font-size:12.5px; color:var(--ink-soft); line-height:1.5; margin-top:4px;}
+  .sync-status{font-size:11.5px; color:var(--ink-soft); margin-top:8px; min-height:14px;}
+  .sync-status.ok{color:var(--green);}
+  .sync-status.warn{color:var(--rust);}
+  .sync-status.busy{color:var(--amber);}
   .row{display:flex; gap:10px; flex-wrap:wrap;}
   .row > *{flex:1; min-width:140px;}
   label{display:block; font-size:12.5px; font-weight:600; color:var(--ink-soft); margin-bottom:4px;}
@@ -169,23 +166,6 @@
   }
   #pdfArea{background:#fff;}
   #pdfArea h2{border-bottom:2px solid var(--green); padding-bottom:6px;}
-
-  .sync-banner{
-    display:flex; align-items:center; justify-content:center; gap:10px;
-    padding:8px 14px; font-size:12.5px; text-align:center;
-  }
-  .sync-banner.loading{background:#EEF2EE; color:var(--ink-soft);}
-  .sync-banner.ok{background:#E4F3E9; color:var(--green-deep);}
-  .sync-banner.err{background:#FDECEA; color:#9A2E22; font-weight:600;}
-  .sync-banner button{
-    border:1px solid currentColor; background:transparent; color:inherit;
-    border-radius:3px; padding:3px 10px; font-size:12px; cursor:pointer;
-  }
-  .period-pill-row{display:flex; align-items:center; gap:8px; flex-shrink:0;}
-  .btn-refresh{
-    background:transparent; border:1px solid #C9DACB; color:#fff; border-radius:3px;
-    padding:6px 9px; font-size:12px; cursor:pointer; white-space:nowrap; flex-shrink:0;
-  }
 </style>
 </head>
 <body>
@@ -194,15 +174,11 @@
   <div class="brand">
     <div>
       <h1>Stok Barang Operasional</h1>
-      <div class="sub">Campang Raya</div>
+      <div class="sub">Cabang Campang Raya · CV. Chandra Perdana Abadi</div>
     </div>
-    <div class="period-pill-row">
-      <div class="period-pill" id="periodPill">–</div>
-      <button class="btn-refresh" id="btnManualSync" title="Ambil data terbaru dari server">⟳ Segarkan</button>
-    </div>
+    <div class="period-pill" id="periodPill">–</div>
   </div>
 </header>
-<div id="syncBanner" class="sync-banner" style="display:none;"></div>
 
 <nav class="tabs" id="tabs">
   <button data-tab="setting" class="active">Pengaturan</button>
@@ -232,15 +208,20 @@
     </div>
     <div class="card">
       <h2>Periode Berjalan</h2>
-      <p class="hint">Siklus stok berjalan dari tanggal 11 hingga tanggal 10 bulan berikutnya, mengikuti jadwal belanja bulanan cabang.</p>
-      <div class="row">
-        <div class="field"><label>Mulai periode</label><input type="date" id="periodStart"></div>
-        <div class="field"><label>Akhir periode</label><input type="date" id="periodEnd"></div>
+      <p class="hint">Siklus stok berjalan dari tanggal 11 hingga tanggal 10 bulan berikutnya, mengikuti jadwal belanja bulanan cabang. Cukup pilih periodenya — tanggal mulai &amp; akhir mengikuti otomatis.</p>
+      <div class="field">
+        <label>Pilih periode</label>
+        <select id="periodSelect"></select>
       </div>
+      <div class="hint" id="periodRangeHint"></div>
       <div class="btn-row">
-        <button class="btn secondary" id="btnUsePeriodNow">Gunakan Periode Berjalan Otomatis</button>
-        <button class="btn" id="btnLoadPeriod">Muat / Buka Periode Ini</button>
+        <button class="btn secondary" id="btnUsePeriodNow">Ke Periode Berjalan Sekarang</button>
+        <button class="btn" id="btnLoadPeriod">Muat Ulang dari Server</button>
       </div>
+    </div>
+    <div class="card">
+      <h2>Penyimpanan Data</h2>
+      <p class="hint">Semua isian — stok awal, stok akhir, nota pembelian, cek mingguan, dan foto — otomatis tersimpan ke spreadsheet server beberapa saat setelah diisi, tanpa perlu menekan tombol Simpan. Data tidak akan hilang saat refresh atau dibuka dari HP/perangkat lain, selama koneksi internet tersambung. Status sinkron ditampilkan di bawah tiap form.</p>
     </div>
   </section>
 
@@ -254,6 +235,7 @@
         <button class="btn secondary" id="btnAddItem">+ Tambah Barang</button>
         <button class="btn" id="btnSaveItems">Simpan Master Barang</button>
       </div>
+      <div class="sync-status" id="itemsSyncStatus"></div>
     </div>
   </section>
 
@@ -268,6 +250,7 @@
       <div class="btn-row">
         <button class="btn" id="btnSaveAwal">Simpan Stok Awal</button>
       </div>
+      <div class="sync-status" id="awalSyncStatus"></div>
     </div>
   </section>
 
@@ -281,6 +264,7 @@
         <button class="btn secondary" id="btnAddNota">+ Tambah Nota</button>
         <button class="btn" id="btnSaveNota">Simpan Nota Pembelian</button>
       </div>
+      <div class="sync-status" id="notaSyncStatus"></div>
     </div>
   </section>
 
@@ -303,6 +287,7 @@
       <div class="btn-row">
         <button class="btn" id="btnSaveWeek">Simpan Cek Mingguan</button>
       </div>
+      <div class="sync-status" id="mingguanSyncStatus"></div>
     </div>
     <div class="card">
       <h3>Riwayat Cek Mingguan Periode Ini</h3>
@@ -326,6 +311,7 @@
       <div class="btn-row">
         <button class="btn" id="btnSaveAkhir">Simpan Stok Akhir</button>
       </div>
+      <div class="sync-status" id="akhirSyncStatus"></div>
     </div>
   </section>
 
@@ -479,6 +465,61 @@ function periodIdFrom(start){
   const d = new Date(start);
   return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,'0');
 }
+const MONTHS_ID = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
+// periodId "YYYY-MM" selalu berarti "periode yang mulai tanggal 11 bulan MM tahun YYYY,
+// berakhir tanggal 10 bulan berikutnya" — satu-satunya sumber kebenaran untuk rentang tanggal.
+function periodFromId(pid){
+  const parts = String(pid).split("-");
+  const y = Number(parts[0]), m = Number(parts[1]); // m = 1..12 (bulan mulai)
+  const start = new Date(y, m-1, 11);
+  const end = new Date(y, m, 10);
+  return {start, end};
+}
+function periodLabel(pid){
+  const {start, end} = periodFromId(pid);
+  const sName = MONTHS_ID[start.getMonth()], eName = MONTHS_ID[end.getMonth()];
+  const yLabel = start.getFullYear()===end.getFullYear() ? String(end.getFullYear()) : (start.getFullYear()+"/"+end.getFullYear());
+  return sName+"–"+eName+" "+yLabel;
+}
+function buildPeriodSelectOptions(){
+  const sel = document.getElementById('periodSelect');
+  const prevValue = sel.value;
+  const nowStart = computePeriodFor(new Date()).start;
+  const BACK = 18, FWD = 6; // 18 bulan ke belakang, 6 bulan ke depan — cukup untuk riwayat & perencanaan
+  const ids = [];
+  for(let i=-BACK; i<=FWD; i++){
+    ids.push(periodIdFrom(new Date(nowStart.getFullYear(), nowStart.getMonth()+i, 11)));
+  }
+  sel.innerHTML = ids.map(pid=>`<option value="${pid}">${escapeHtml(periodLabel(pid))}</option>`).join('');
+  if(prevValue && ids.includes(prevValue)) sel.value = prevValue;
+}
+function ensurePeriodOption(pid){
+  const sel = document.getElementById('periodSelect');
+  if(![...sel.options].some(o=>o.value===pid)){
+    const opt = document.createElement('option');
+    opt.value = pid; opt.textContent = periodLabel(pid);
+    sel.appendChild(opt);
+  }
+}
+function applyPeriodFromId(pid){
+  const {start, end} = periodFromId(pid);
+  STATE.periodId = pid;
+  STATE.periodStart = isoDate(start);
+  STATE.periodEnd = isoDate(end);
+  ensurePeriodOption(pid);
+  document.getElementById('periodSelect').value = pid;
+  document.getElementById('periodRangeHint').textContent =
+    "Rentang tanggal: "+fmtDate(start)+" – "+fmtDate(end);
+  refreshPeriodPill();
+  document.getElementById('awalDate').value = STATE.periodStart;
+  document.getElementById('akhirDate').value = STATE.periodEnd;
+  document.getElementById('weekDate').value = todayIso();
+}
+async function loadPeriod(pid){
+  applyPeriodFromId(pid);
+  await pullPeriodData();
+  toast("Periode "+periodLabel(pid)+" dimuat");
+}
 
 /* ---------------- PERSISTENCE (config) ---------------- */
 function loadConfig(){
@@ -549,6 +590,52 @@ async function api(action, payload){
   }
 }
 
+/* ---------------- AUTOSAVE (biar data tidak hilang saat refresh / pindah HP) ---------------- */
+let autosaveTimers = {};
+let autosavePending = {};
+function scheduleAutosave(key, fn, delay){
+  autosavePending[key] = fn;
+  clearTimeout(autosaveTimers[key]);
+  autosaveTimers[key] = setTimeout(()=>{
+    delete autosaveTimers[key];
+    const f = autosavePending[key];
+    delete autosavePending[key];
+    if(f) f();
+  }, delay || 1400);
+}
+function flushAutosaves(){
+  Object.keys(autosaveTimers).forEach(key=>{
+    clearTimeout(autosaveTimers[key]);
+    delete autosaveTimers[key];
+    const f = autosavePending[key];
+    delete autosavePending[key];
+    if(f) f();
+  });
+}
+function nowTime(){
+  return new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
+}
+function setSyncStatus(id, text, cls){
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.textContent = text;
+  el.className = 'sync-status' + (cls?(' '+cls):'');
+}
+function markDirty(key, statusId, saveFn){
+  cacheState(); // simpan ke HP ini seketika, jadi tidak hilang walau langsung refresh
+  if(!STATE.periodId) return;
+  setSyncStatus(statusId, 'Ada perubahan, menunggu disimpan otomatis…', 'busy');
+  scheduleAutosave(key, async ()=>{
+    setSyncStatus(statusId, 'Menyimpan otomatis…', 'busy');
+    try{
+      await saveFn();
+      setSyncStatus(statusId, 'Tersimpan otomatis ke server · '+nowTime(), 'ok');
+    }catch(e){
+      setSyncStatus(statusId, 'Belum tersinkron ke server (tersimpan di HP ini) — akan dicoba lagi', 'warn');
+    }
+  });
+}
+
 /* ---------------- RENDER: TABS ---------------- */
 document.getElementById('tabs').addEventListener('click', (e)=>{
   const btn = e.target.closest('button[data-tab]');
@@ -566,22 +653,15 @@ function refreshPeriodPill(){
   document.getElementById('periodPill').textContent =
     STATE.periodStart ? (fmtDate(STATE.periodStart)+" – "+fmtDate(STATE.periodEnd)) : "Periode belum dipilih";
 }
-document.getElementById('btnUsePeriodNow').addEventListener('click', ()=>{
-  const p = computePeriodFor(new Date());
-  document.getElementById('periodStart').value = isoDate(p.start);
-  document.getElementById('periodEnd').value = isoDate(p.end);
+document.getElementById('btnUsePeriodNow').addEventListener('click', async ()=>{
+  const nowPid = periodIdFrom(computePeriodFor(new Date()).start);
+  await loadPeriod(nowPid);
 });
 document.getElementById('btnLoadPeriod').addEventListener('click', async ()=>{
-  const s = document.getElementById('periodStart').value;
-  const e = document.getElementById('periodEnd').value;
-  if(!s || !e){ toast("Pilih tanggal mulai dan akhir periode dulu"); return; }
-  STATE.periodStart = s; STATE.periodEnd = e; STATE.periodId = periodIdFrom(s);
-  refreshPeriodPill();
-  document.getElementById('awalDate').value = s;
-  document.getElementById('akhirDate').value = e;
-  document.getElementById('weekDate').value = todayIso();
-  await pullPeriodData();
-  toast("Periode "+STATE.periodId+" dimuat");
+  await loadPeriod(document.getElementById('periodSelect').value);
+});
+document.getElementById('periodSelect').addEventListener('change', async (e)=>{
+  await loadPeriod(e.target.value);
 });
 
 /* ---------------- ITEMS ---------------- */
@@ -618,6 +698,7 @@ function renderItemsMaster(){
   wrap.querySelectorAll('input[data-f]').forEach(inp=>{
     inp.addEventListener('input', ()=>{
       STATE.items[+inp.dataset.i][inp.dataset.f] = inp.value;
+      markItemsDirty();
     });
   });
   wrap.querySelectorAll('select[data-f="category"]').forEach(sel=>{
@@ -632,15 +713,18 @@ function renderItemsMaster(){
           STATE.items[idx].category = name;
         }
         renderItemsMaster();
+        markItemsDirty();
         return;
       }
       STATE.items[idx].category = sel.value;
+      markItemsDirty();
     });
   });
   wrap.querySelectorAll('[data-remove]').forEach(b=>{
     b.addEventListener('click', ()=>{
       STATE.items.splice(+b.dataset.remove,1);
       renderItemsMaster(); renderStockForms();
+      markItemsDirty();
     });
   });
 }
@@ -649,15 +733,22 @@ function escapeHtml(s){ return String(s||"").replace(/[&<>"']/g, c=>({'&':'&amp;
 document.getElementById('btnAddItem').addEventListener('click', ()=>{
   STATE.items.push({id: 'itm_'+uid(), name:"Barang Baru", unit:"pcs", category:"Operasional"});
   renderItemsMaster();
+  markItemsDirty();
 });
+async function doSaveItems(){
+  await api('saveItems', {items: STATE.items});
+  cacheState();
+}
 document.getElementById('btnSaveItems').addEventListener('click', async ()=>{
   try{
-    await api('saveItems', {items: STATE.items});
-    cacheState();
+    await doSaveItems();
     renderStockForms();
     toast("Master barang tersimpan");
   }catch(e){ toast("Gagal simpan: "+e.message); }
 });
+function markItemsDirty(){
+  markDirty('items', 'itemsSyncStatus', doSaveItems);
+}
 
 /* ---------------- STOCK FORMS (awal / mingguan / akhir) ---------------- */
 async function resizeImage(file, maxW, maxH, opts){
@@ -735,11 +826,12 @@ function itemRowTemplate(it, storeObj, withPhoto){
     </div>
   </div>`;
 }
-function bindItemRow(rowEl, it, storeObj, key){
+function bindItemRow(rowEl, it, storeObj, onDirty){
   const qtyInput = rowEl.querySelector('.qty-input');
   qtyInput.addEventListener('input', ()=>{
     storeObj[it.id] = storeObj[it.id] || {};
     storeObj[it.id].qty = qtyInput.value === '' ? null : Number(qtyInput.value);
+    if(onDirty) onDirty();
   });
   const photoInput = rowEl.querySelector('.photo-input');
   if(photoInput){
@@ -750,6 +842,7 @@ function bindItemRow(rowEl, it, storeObj, key){
       storeObj[it.id].photo = dataUrl;
       const row = photoInput.closest('.photo-row');
       row.querySelector('.photo-thumb,.photo-placeholder').outerHTML = `<img class="photo-thumb" src="${dataUrl}">`;
+      if(onDirty) onDirty();
     });
   }
 }
@@ -760,7 +853,7 @@ function renderStockForms(){
   STATE.items.forEach(it=>{
     awalWrap.insertAdjacentHTML('beforeend', itemRowTemplate(it, STATE.awal, true));
   });
-  awalWrap.querySelectorAll('.item-line').forEach((row,idx)=>bindItemRow(row, STATE.items[idx], STATE.awal));
+  awalWrap.querySelectorAll('.item-line').forEach((row,idx)=>bindItemRow(row, STATE.items[idx], STATE.awal, markAwalDirty));
   document.getElementById('awalInspector').value = STATE.awalInspector||"";
 
   // Stok akhir
@@ -769,7 +862,7 @@ function renderStockForms(){
   STATE.items.forEach(it=>{
     akhirWrap.insertAdjacentHTML('beforeend', itemRowTemplate(it, STATE.akhir, true));
   });
-  akhirWrap.querySelectorAll('.item-line').forEach((row,idx)=>bindItemRow(row, STATE.items[idx], STATE.akhir));
+  akhirWrap.querySelectorAll('.item-line').forEach((row,idx)=>bindItemRow(row, STATE.items[idx], STATE.akhir, markAkhirDirty));
   document.getElementById('akhirInspector').value = STATE.akhirInspector||"";
 
   // Mingguan (current in-progress entry uses a temp object)
@@ -787,7 +880,7 @@ function renderWeeklyForm(){
   STATE.items.forEach(it=>{
     wrap.insertAdjacentHTML('beforeend', itemRowTemplate(it, currentWeekValues, false));
   });
-  wrap.querySelectorAll('.item-line').forEach((row,idx)=>bindItemRow(row, STATE.items[idx], currentWeekValues));
+  wrap.querySelectorAll('.item-line').forEach((row,idx)=>bindItemRow(row, STATE.items[idx], currentWeekValues, markWeekDirty));
 }
 function renderWeekHistory(){
   const wrap = document.getElementById('weekHistory');
@@ -801,48 +894,72 @@ function renderWeekHistory(){
   });
 }
 
-document.getElementById('btnSaveAwal').addEventListener('click', async ()=>{
-  if(!STATE.periodId){ toast("Muat periode dulu di tab Pengaturan"); return; }
+async function doSaveAwal(){
+  if(!STATE.periodId) return;
   STATE.awalInspector = document.getElementById('awalInspector').value.trim();
   const date = document.getElementById('awalDate').value || STATE.periodStart;
+  await api('saveEntry', {periodId: STATE.periodId, type:'awal', date, inspector: STATE.awalInspector, values: STATE.awal});
+  cacheState();
+}
+document.getElementById('btnSaveAwal').addEventListener('click', async ()=>{
+  if(!STATE.periodId){ toast("Muat periode dulu di tab Pengaturan"); return; }
   try{
-    await api('saveEntry', {periodId: STATE.periodId, type:'awal', date, inspector: STATE.awalInspector, values: STATE.awal});
-    cacheState();
+    await doSaveAwal();
     toast("Stok awal tersimpan");
-    syncSavedNotice("Stok awal tersimpan");
   }catch(e){ toast("Gagal simpan: "+e.message); }
 });
+function markAwalDirty(){ markDirty('awal', 'awalSyncStatus', doSaveAwal); }
+document.getElementById('awalInspector').addEventListener('input', ()=>{
+  STATE.awalInspector = document.getElementById('awalInspector').value.trim();
+  markAwalDirty();
+});
 
-document.getElementById('btnSaveAkhir').addEventListener('click', async ()=>{
-  if(!STATE.periodId){ toast("Muat periode dulu di tab Pengaturan"); return; }
+async function doSaveAkhir(){
+  if(!STATE.periodId) return;
   STATE.akhirInspector = document.getElementById('akhirInspector').value.trim();
   STATE.sigMonthly = sigCanvases.sigMonthly.toDataURL('image/png');
   const date = document.getElementById('akhirDate').value || STATE.periodEnd;
+  await api('saveEntry', {periodId: STATE.periodId, type:'akhir', date, inspector: STATE.akhirInspector, values: STATE.akhir, signature: STATE.sigMonthly});
+  cacheState();
+}
+document.getElementById('btnSaveAkhir').addEventListener('click', async ()=>{
+  if(!STATE.periodId){ toast("Muat periode dulu di tab Pengaturan"); return; }
   try{
-    await api('saveEntry', {periodId: STATE.periodId, type:'akhir', date, inspector: STATE.akhirInspector, values: STATE.akhir, signature: STATE.sigMonthly});
-    cacheState();
+    await doSaveAkhir();
     toast("Stok akhir tersimpan");
-    syncSavedNotice("Stok akhir tersimpan");
   }catch(e){ toast("Gagal simpan: "+e.message); }
 });
+function markAkhirDirty(){ markDirty('akhir', 'akhirSyncStatus', doSaveAkhir); }
+document.getElementById('akhirInspector').addEventListener('input', ()=>{
+  STATE.akhirInspector = document.getElementById('akhirInspector').value.trim();
+  markAkhirDirty();
+});
 
-document.getElementById('btnSaveWeek').addEventListener('click', async ()=>{
-  if(!STATE.periodId){ toast("Muat periode dulu di tab Pengaturan"); return; }
+async function doSaveWeek(){
+  if(!STATE.periodId) return;
   const week = Number(document.getElementById('weekNumber').value)||1;
   const date = document.getElementById('weekDate').value || todayIso();
   const inspector = document.getElementById('weekInspector').value.trim();
   const sig = sigCanvases.sigWeekly.toDataURL('image/png');
   const entry = {week, date, inspector, sig, values: JSON.parse(JSON.stringify(currentWeekValues))};
+  await api('saveEntry', {periodId: STATE.periodId, type:'mingguan', week, date, inspector, values: currentWeekValues, signature: sig});
+  STATE.weeks = STATE.weeks.filter(w=>w.week!==week);
+  STATE.weeks.push(entry);
+  cacheState();
+  renderWeekHistory();
+}
+document.getElementById('btnSaveWeek').addEventListener('click', async ()=>{
+  if(!STATE.periodId){ toast("Muat periode dulu di tab Pengaturan"); return; }
   try{
-    await api('saveEntry', {periodId: STATE.periodId, type:'mingguan', week, date, inspector, values: currentWeekValues, signature: sig});
-    STATE.weeks = STATE.weeks.filter(w=>w.week!==week);
-    STATE.weeks.push(entry);
-    cacheState();
-    renderWeekHistory();
+    const week = Number(document.getElementById('weekNumber').value)||1;
+    await doSaveWeek();
     toast("Cek mingguan ke-"+week+" tersimpan");
-    syncSavedNotice("Cek mingguan ke-"+week+" tersimpan");
   }catch(e){ toast("Gagal simpan: "+e.message); }
 });
+function markWeekDirty(){ markDirty('mingguan', 'mingguanSyncStatus', doSaveWeek); }
+document.getElementById('weekInspector').addEventListener('input', markWeekDirty);
+document.getElementById('weekNumber').addEventListener('input', markWeekDirty);
+document.getElementById('weekDate').addEventListener('input', markWeekDirty);
 
 /* ---------------- NOTA PEMBELIAN ---------------- */
 function notaRowTemplate(n){
@@ -878,8 +995,8 @@ function renderNotaList(){
   wrap.querySelectorAll('.nota-line').forEach(rowEl=>{
     const id = rowEl.dataset.nota;
     const n = STATE.notaPembelian.find(x=>x.id===id);
-    rowEl.querySelector('.nota-date').addEventListener('input', (e)=>{ n.date = e.target.value; });
-    rowEl.querySelector('.nota-note').addEventListener('input', (e)=>{ n.note = e.target.value; });
+    rowEl.querySelector('.nota-date').addEventListener('input', (e)=>{ n.date = e.target.value; markNotaDirty(); });
+    rowEl.querySelector('.nota-note').addEventListener('input', (e)=>{ n.note = e.target.value; markNotaDirty(); });
     const photoInput = rowEl.querySelector('.nota-photo-input');
     photoInput.addEventListener('change', async ()=>{
       if(!photoInput.files[0]) return;
@@ -891,6 +1008,7 @@ function renderNotaList(){
         const dataUrl = await resizeNotaImage(photoInput.files[0]);
         n.photo = dataUrl;
         row.querySelector('.photo-thumb,.photo-placeholder').outerHTML = `<img class="photo-thumb" src="${dataUrl}">`;
+        markNotaDirty();
       }catch(e){
         row.querySelector('.photo-thumb,.photo-placeholder').outerHTML = originalHtml;
         toast("Gagal memproses foto nota: "+e.message);
@@ -901,6 +1019,7 @@ function renderNotaList(){
     b.addEventListener('click', ()=>{
       STATE.notaPembelian = STATE.notaPembelian.filter(x=>x.id!==b.dataset.removeNota);
       renderNotaList();
+      markNotaDirty();
     });
   });
 }
@@ -908,19 +1027,23 @@ document.getElementById('btnAddNota').addEventListener('click', ()=>{
   STATE.notaPembelian.push({id:'nota_'+uid(), date: STATE.periodStart || todayIso(), note:'', photo:''});
   renderNotaList();
 });
+async function doSaveNota(){
+  if(!STATE.periodId) return;
+  await api('saveNota', {periodId: STATE.periodId, notas: STATE.notaPembelian});
+  cacheState();
+}
 document.getElementById('btnSaveNota').addEventListener('click', async ()=>{
   if(!STATE.periodId){ toast("Muat periode dulu di tab Pengaturan"); return; }
   try{
-    await api('saveNota', {periodId: STATE.periodId, notas: STATE.notaPembelian});
-    cacheState();
+    await doSaveNota();
     toast("Nota pembelian tersimpan");
-    syncSavedNotice("Nota pembelian tersimpan");
   }catch(e){ toast("Gagal simpan: "+e.message); }
 });
+function markNotaDirty(){ markDirty('nota', 'notaSyncStatus', doSaveNota); }
 
 /* ---------------- SIGNATURE PADS ---------------- */
 const sigCanvases = {};
-function setupSignaturePad(id){
+function setupSignaturePad(id, onDirty){
   const canvas = document.getElementById(id);
   function resize(){
     const rect = canvas.getBoundingClientRect();
@@ -943,7 +1066,7 @@ function setupSignaturePad(id){
     ctx.beginPath(); ctx.moveTo(last.x,last.y); ctx.lineTo(p.x,p.y); ctx.stroke();
     last = p; e.preventDefault();
   }
-  function end(){ drawing=false; }
+  function end(){ if(drawing && onDirty) onDirty(); drawing=false; }
   canvas.addEventListener('mousedown', start);
   canvas.addEventListener('mousemove', move);
   window.addEventListener('mouseup', end);
@@ -957,6 +1080,8 @@ document.querySelectorAll('[data-clear]').forEach(b=>{
     const canvas = sigCanvases[b.dataset.clear];
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0,0,canvas.width,canvas.height);
+    if(b.dataset.clear==='sigWeekly') markWeekDirty();
+    if(b.dataset.clear==='sigMonthly') markAkhirDirty();
   });
 });
 
@@ -1246,7 +1371,7 @@ async function refreshPeriods(){
     periods.forEach(p=>{
       const div = document.createElement('div');
       div.className='session-item';
-      div.innerHTML = `<span>${p.periodId} <span class="meta">(${fmtDate(p.start)} – ${fmtDate(p.end)})</span></span>`;
+      div.innerHTML = `<span>${escapeHtml(periodLabel(p.periodId))} <span class="meta">(${fmtDate(p.start)} – ${fmtDate(p.end)})</span></span>`;
       const btn = document.createElement('button');
       btn.className='btn secondary'; btn.textContent='Muat';
       btn.style.padding='6px 10px'; btn.style.fontSize='12px';
@@ -1257,77 +1382,28 @@ async function refreshPeriods(){
   }catch(e){ wrap.textContent = 'Gagal memuat daftar periode: '+e.message; }
 }
 async function loadSpecificPeriod(p){
-  document.getElementById('periodStart').value = isoDate(new Date(p.start));
-  document.getElementById('periodEnd').value = isoDate(new Date(p.end));
-  document.getElementById('btnLoadPeriod').click();
+  await loadPeriod(p.periodId);
   document.querySelector('#tabs button[data-tab="awal"]').click();
 }
 document.getElementById('btnRefreshPeriods').addEventListener('click', refreshPeriods);
 
 /* ---------------- PULL DATA FROM SHEET ---------------- */
-function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
-
-function setSyncStatus(kind, message, opts){
-  opts = opts || {};
-  const el = document.getElementById('syncBanner');
-  el.className = 'sync-banner ' + kind;
-  el.innerHTML = escapeHtml(message) + (opts.retry ? ' <button id="syncRetryBtn">Coba Lagi</button>' : '');
-  el.style.display = 'flex';
-  if(opts.retry){
-    document.getElementById('syncRetryBtn').addEventListener('click', ()=> pullPeriodData());
-  }
-  if(kind === 'ok' && opts.autoHide !== false){
-    setTimeout(()=>{ if(el.className.indexOf('ok') > -1) el.style.display = 'none'; }, 3500);
-  }
-}
-function syncSavedNotice(label){
-  const now = new Date();
-  setSyncStatus('ok', label + ' ke server · pukul ' + now.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}));
-}
-
-let syncInFlight = false;
-// Menarik data terbaru dari spreadsheet. Dicoba beberapa kali (koneksi HP/wifi kadang putus-nyambung)
-// dan status sinkronisasi selalu ditampilkan jelas di banner atas — supaya data yang "belum sempat
-// tersinkron" tidak disalahartikan sebagai "belum diisi" saat dibuka dari perangkat lain.
 async function pullPeriodData(){
-  if(syncInFlight) return false;
-  syncInFlight = true;
-  const attempts = 3;
-  let lastErr = null;
-  for(let i=0; i<attempts; i++){
-    setSyncStatus('loading', i===0
-      ? 'Menyinkronkan data dari server…'
-      : 'Menyinkronkan data dari server… (percobaan '+(i+1)+' dari '+attempts+')');
-    try{
-      const res = await api('getData', {periodId: STATE.periodId});
-      if(res.items && res.items.length) STATE.items = res.items;
-      STATE.awal = res.awal || {};
-      STATE.akhir = res.akhir || {};
-      STATE.weeks = res.weeks || [];
-      STATE.awalInspector = (res.awalMeta&&res.awalMeta.inspector)||"";
-      STATE.akhirInspector = (res.akhirMeta&&res.akhirMeta.inspector)||"";
-      STATE.sigMonthly = (res.akhirMeta&&res.akhirMeta.signature)||"";
-      STATE.notaPembelian = res.notas || STATE.notaPembelian || [];
-      renderStockForms();
-      cacheState();
-      const now = new Date();
-      setSyncStatus('ok', 'Tersinkron dari server · pukul '+now.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}));
-      syncInFlight = false;
-      return true;
-    }catch(e){
-      lastErr = e;
-      if(i < attempts-1) await sleep(1200);
-    }
+  try{
+    const res = await api('getData', {periodId: STATE.periodId});
+    if(res.items && res.items.length) STATE.items = res.items;
+    STATE.awal = res.awal || {};
+    STATE.akhir = res.akhir || {};
+    STATE.weeks = res.weeks || [];
+    STATE.awalInspector = (res.awalMeta&&res.awalMeta.inspector)||"";
+    STATE.akhirInspector = (res.akhirMeta&&res.akhirMeta.inspector)||"";
+    STATE.sigMonthly = (res.akhirMeta&&res.akhirMeta.signature)||"";
+    STATE.notaPembelian = res.notas || STATE.notaPembelian || [];
+    renderStockForms();
+  }catch(e){
+    toast("Belum bisa memuat dari spreadsheet (cek koneksi). Menggunakan data lokal.");
   }
-  setSyncStatus(
-    'err',
-    'Gagal memuat data terbaru dari server — data yang tampil mungkin belum lengkap/terbaru. ' + (lastErr ? lastErr.message : ''),
-    {retry:true}
-  );
-  syncInFlight = false;
-  return false;
 }
-document.getElementById('btnManualSync').addEventListener('click', ()=> pullPeriodData());
 
 /* ---------------- INIT ---------------- */
 async function init(){
@@ -1335,26 +1411,21 @@ async function init(){
   loadCache();
   if(!STATE.items.length) STATE.items = JSON.parse(JSON.stringify(SEED_ITEMS));
 
-  setupSignaturePad('sigWeekly');
-  setupSignaturePad('sigMonthly');
+  setupSignaturePad('sigWeekly', ()=>markWeekDirty());
+  setupSignaturePad('sigMonthly', ()=>markAkhirDirty());
 
-  const p = computePeriodFor(new Date());
-  document.getElementById('periodStart').value = isoDate(p.start);
-  document.getElementById('periodEnd').value = isoDate(p.end);
-  STATE.periodStart = STATE.periodStart || isoDate(p.start);
-  STATE.periodEnd = STATE.periodEnd || isoDate(p.end);
-  STATE.periodId = STATE.periodId || periodIdFrom(STATE.periodStart);
-  document.getElementById('awalDate').value = STATE.periodStart;
-  document.getElementById('akhirDate').value = STATE.periodEnd;
-  document.getElementById('weekDate').value = todayIso();
+  buildPeriodSelectOptions();
+  const nowPid = periodIdFrom(computePeriodFor(new Date()).start);
+  applyPeriodFromId(STATE.periodId || nowPid);
 
-  refreshPeriodPill();
   renderItemsMaster();
   renderStockForms();
 
   document.getElementById('btnSaveSetting').addEventListener('click', ()=>{
     saveConfig(); toast("Email laporan tersimpan");
   });
+  document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='hidden') flushAutosaves(); });
+  window.addEventListener('pagehide', flushAutosaves);
 
   if(CFG.scriptUrl){ pullPeriodData(); }
 }
