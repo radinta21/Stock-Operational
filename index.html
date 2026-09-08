@@ -1669,9 +1669,10 @@ async function buildReportPdf(){
   pdf.text(STATE.akhirInspector || '-', PDF_MARGIN+colW+gapCols, ctx.y);
   ctx.y += 10;
 
-  // ---- Kondisi Stok Akhir: rencana pembelian ----
+  // ---- Kondisi Stok Akhir: rencana pembelian (selalu di halaman baru sendiri) ----
   const needed = rows.filter(r=> r.status==='habis' || r.status==='segera');
   if(needed.length){
+    pdf.addPage(); ctx.y = PDF_MARGIN;
     pdfSectionTitle(pdf, ctx, 'Kondisi Stok Akhir', 'Rencana Pembelian Barang Periode Bulan Berikutnya', 20);
     const purchaseColumns = [
       {label:'Barang', width:70, value:r=>r.name},
