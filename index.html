@@ -161,6 +161,10 @@
 
   .nota-line{border:1px solid var(--line); border-radius:4px; padding:12px; margin-bottom:10px; background:#FCFDFC;}
 
+  .group-tabs{display:flex; gap:4px; margin-bottom:12px; border-bottom:1px solid var(--line);}
+  .group-tabs button{flex:1; background:none; border:none; border-bottom:3px solid transparent; padding:9px 6px; font-size:12.5px; font-weight:600; color:var(--ink-soft); border-radius:3px 3px 0 0;}
+  .group-tabs button.active{color:var(--green-deep); border-bottom-color:var(--green); background:var(--tab-bg);}
+
   @media print{
     header.top, nav.tabs, .btn-row, .no-print{display:none !important;}
   }
@@ -229,7 +233,11 @@
   <section class="panel" id="panel-items">
     <div class="card">
       <h2>Master Barang Habis Pakai</h2>
-      <p class="hint">Daftar ini sudah diisi awal dari struk belanja 11 Agustus 2026. Sesuaikan nama, satuan, atau kategori bila perlu — daftar ini dipakai untuk periode manapun.</p>
+      <p class="hint">Daftar ini sudah diisi awal dari struk belanja 11 Agustus 2026. Sesuaikan nama, satuan, atau kategori bila perlu — daftar ini dipakai untuk periode manapun. Barang dikelompokkan menjadi "Belanja Bulanan Branch" (kebutuhan cabang yang sudah ada) dan "Belanja Bulanan Netop" (barang lain seperti kabel ties, lakban, baterai, dll). Pindahkan barang antar kelompok lewat dropdown "Kelompok Belanja" di tiap baris.</p>
+      <div class="group-tabs" data-group-for="items">
+        <button data-group="branch" class="active">Belanja Bulanan Branch</button>
+        <button data-group="netop">Belanja Bulanan Netop</button>
+      </div>
       <div id="itemsList"></div>
       <div class="btn-row">
         <button class="btn secondary" id="btnAddItem">+ Tambah Barang</button>
@@ -245,6 +253,10 @@
       <h2>Pencatatan Stok Awal</h2>
       <p class="hint">Diisi di awal periode (sekitar tanggal 11), setelah barang belanjaan diterima. Sertakan foto kondisi stok tiap barang sebagai bukti awal.</p>
       <div class="field"><label>Tanggal pencatatan</label><input type="date" id="awalDate"></div>
+      <div class="group-tabs" data-group-for="awal">
+        <button data-group="branch" class="active">Belanja Bulanan Branch</button>
+        <button data-group="netop">Belanja Bulanan Netop</button>
+      </div>
       <div id="awalList"></div>
       <div class="field" style="margin-top:6px;"><label>Nama pemeriksa</label><input type="text" id="awalInspector" placeholder="Nama yang mencatat stok awal"></div>
       <div class="btn-row">
@@ -277,6 +289,10 @@
         <div class="field"><label>Minggu ke-</label><input type="number" id="weekNumber" min="1" value="1"></div>
         <div class="field"><label>Tanggal cek</label><input type="date" id="weekDate"></div>
       </div>
+      <div class="group-tabs" data-group-for="mingguan">
+        <button data-group="branch" class="active">Belanja Bulanan Branch</button>
+        <button data-group="netop">Belanja Bulanan Netop</button>
+      </div>
       <div id="mingguanList"></div>
       <div class="field"><label>Nama pemeriksa mingguan</label><input type="text" id="weekInspector"></div>
       <div class="field">
@@ -301,6 +317,10 @@
       <h2>Stok Akhir Bulan (Tanggal 10)</h2>
       <p class="hint">Diisi di akhir periode, sebelum belanja bulan berikutnya. Sertakan foto kondisi stok akhir tiap barang — data ini menjadi dasar forecast dan rencana pembelian bulan depan.</p>
       <div class="field"><label>Tanggal pencatatan</label><input type="date" id="akhirDate"></div>
+      <div class="group-tabs" data-group-for="akhir">
+        <button data-group="branch" class="active">Belanja Bulanan Branch</button>
+        <button data-group="netop">Belanja Bulanan Netop</button>
+      </div>
       <div id="akhirList"></div>
       <div class="field"><label>Nama pemeriksa bulanan</label><input type="text" id="akhirInspector"></div>
       <div class="field">
@@ -334,6 +354,19 @@
           <div><div class="hint">Pemeriksa Mingguan Terakhir</div><div id="sigWeeklyPreviewWrap"></div></div>
           <div><div class="hint">Pemeriksa Bulanan</div><div id="sigMonthlyPreviewWrap"></div></div>
         </div>
+      </div>
+    </div>
+
+    <div class="card" id="pdfPurchaseNeeds" style="display:none;">
+      <h2>Kondisi Stok Akhir</h2>
+      <p class="hint">Daftar barang yang perlu segera dibeli bulan depan — hanya barang dengan status "Stock Habis" atau "Segera Habis".</p>
+      <div style="overflow-x:auto;">
+        <table id="purchaseNeedsTable">
+          <thead>
+            <tr><th>Barang</th><th class="num">Stok Akhir</th><th class="num">Jumlah Pembelian</th><th>Status</th></tr>
+          </thead>
+          <tbody id="purchaseNeedsBody"></tbody>
+        </table>
       </div>
     </div>
 
@@ -407,30 +440,36 @@ function allCategoryOptions(){
   return CATEGORY_OPTIONS.concat(extra);
 }
 
+const GROUP_LABELS = { branch: "Belanja Bulanan Branch", netop: "Belanja Bulanan Netop" };
+
 const SEED_ITEMS = [
-  {id:"milo", name:"Milo 3in1 (dus 18x34g)", unit:"dus", category:"Pantry"},
-  {id:"tongtali", name:"Tong Tali J25x50g", unit:"pcs", category:"Operasional"},
-  {id:"gulaku", name:"Gula Pasir Gulaku 1kg", unit:"pcs", category:"Pantry"},
-  {id:"kopi", name:"Kopi J.A 500g", unit:"pcs", category:"Pantry"},
-  {id:"hitaer", name:"Hit Aerosol Lavender Breeze 600", unit:"pcs", category:"Kebersihan & Sanitasi"},
-  {id:"vapeswt", name:"Vape Aerosol Sweet Powder 600", unit:"pcs", category:"Kebersihan & Sanitasi"},
-  {id:"vapefruit", name:"Vape Aerosol Fruit Fresh 600", unit:"pcs", category:"Kebersihan & Sanitasi"},
-  {id:"stellafruit", name:"Stella Pocket Fruit", unit:"pcs", category:"Kebersihan & Sanitasi"},
-  {id:"stellaflower", name:"Stella Pocket Flower", unit:"pcs", category:"Kebersihan & Sanitasi"},
-  {id:"scotch", name:"Scotch Busa Spon Hijau 30m", unit:"pcs", category:"Operasional"},
-  {id:"klinkantong", name:"Kantong Sampah Klin Pak Besar", unit:"pack", category:"Kebersihan & Sanitasi"},
-  {id:"dettolscr", name:"Dettol Hand Sanitizer Refill 200ml", unit:"pcs", category:"Kebersihan & Sanitasi"},
-  {id:"dettolsnst", name:"Dettol Hand Sanitizer Sensitive Refill 200ml", unit:"pcs", category:"Kebersihan & Sanitasi"},
-  {id:"harpic", name:"Harpic Power 450ml", unit:"pcs", category:"Kebersihan & Sanitasi"},
-  {id:"nicerefill", name:"Tisu Nice Refill 1000's", unit:"pack", category:"Kebersihan & Sanitasi"},
-  {id:"tessa", name:"Tisu Tessa Refill", unit:"pack", category:"Kebersihan & Sanitasi"},
-  {id:"scekonomi", name:"Sabun Cuci Piring SC Ekonomi 1850gr", unit:"pcs", category:"Kebersihan & Sanitasi"},
-  {id:"niceroll", name:"Tisu Roll Nice Embos 10", unit:"pack", category:"Kebersihan & Sanitasi"},
-  {id:"bukrim", name:"Sabun Cuci Tangan Bukrim Liquid 800ml", unit:"pcs", category:"Kebersihan & Sanitasi"},
-  {id:"cling", name:"Cling Pembersih Kaca 425ml", unit:"pcs", category:"Kebersihan & Sanitasi"},
-  {id:"dahliacndn", name:"Pengharum Dahlia F601 Candy Pudding", unit:"pcs", category:"Kebersihan & Sanitasi"},
-  {id:"dahliacoffee", name:"Pengharum Dahlia F601 Coffee", unit:"pcs", category:"Kebersihan & Sanitasi"},
-  {id:"dahliateh", name:"Pengharum Dahlia F601 Teh", unit:"pcs", category:"Kebersihan & Sanitasi"}
+  {id:"milo", name:"Milo 3in1 (dus 18x34g)", unit:"dus", category:"Pantry", group:"branch"},
+  {id:"tongtali", name:"Tong Tali J25x50g", unit:"pcs", category:"Operasional", group:"branch"},
+  {id:"gulaku", name:"Gula Pasir Gulaku 1kg", unit:"pcs", category:"Pantry", group:"branch"},
+  {id:"kopi", name:"Kopi J.A 500g", unit:"pcs", category:"Pantry", group:"branch"},
+  {id:"hitaer", name:"Hit Aerosol Lavender Breeze 600", unit:"pcs", category:"Kebersihan & Sanitasi", group:"branch"},
+  {id:"vapeswt", name:"Vape Aerosol Sweet Powder 600", unit:"pcs", category:"Kebersihan & Sanitasi", group:"branch"},
+  {id:"vapefruit", name:"Vape Aerosol Fruit Fresh 600", unit:"pcs", category:"Kebersihan & Sanitasi", group:"branch"},
+  {id:"stellafruit", name:"Stella Pocket Fruit", unit:"pcs", category:"Kebersihan & Sanitasi", group:"branch"},
+  {id:"stellaflower", name:"Stella Pocket Flower", unit:"pcs", category:"Kebersihan & Sanitasi", group:"branch"},
+  {id:"scotch", name:"Scotch Busa Spon Hijau 30m", unit:"pcs", category:"Operasional", group:"branch"},
+  {id:"klinkantong", name:"Kantong Sampah Klin Pak Besar", unit:"pack", category:"Kebersihan & Sanitasi", group:"branch"},
+  {id:"dettolscr", name:"Dettol Hand Sanitizer Refill 200ml", unit:"pcs", category:"Kebersihan & Sanitasi", group:"branch"},
+  {id:"dettolsnst", name:"Dettol Hand Sanitizer Sensitive Refill 200ml", unit:"pcs", category:"Kebersihan & Sanitasi", group:"branch"},
+  {id:"harpic", name:"Harpic Power 450ml", unit:"pcs", category:"Kebersihan & Sanitasi", group:"branch"},
+  {id:"nicerefill", name:"Tisu Nice Refill 1000's", unit:"pack", category:"Kebersihan & Sanitasi", group:"branch"},
+  {id:"tessa", name:"Tisu Tessa Refill", unit:"pack", category:"Kebersihan & Sanitasi", group:"branch"},
+  {id:"scekonomi", name:"Sabun Cuci Piring SC Ekonomi 1850gr", unit:"pcs", category:"Kebersihan & Sanitasi", group:"branch"},
+  {id:"niceroll", name:"Tisu Roll Nice Embos 10", unit:"pack", category:"Kebersihan & Sanitasi", group:"branch"},
+  {id:"bukrim", name:"Sabun Cuci Tangan Bukrim Liquid 800ml", unit:"pcs", category:"Kebersihan & Sanitasi", group:"branch"},
+  {id:"cling", name:"Cling Pembersih Kaca 425ml", unit:"pcs", category:"Kebersihan & Sanitasi", group:"branch"},
+  {id:"dahliacndn", name:"Pengharum Dahlia F601 Candy Pudding", unit:"pcs", category:"Kebersihan & Sanitasi", group:"branch"},
+  {id:"dahliacoffee", name:"Pengharum Dahlia F601 Coffee", unit:"pcs", category:"Kebersihan & Sanitasi", group:"branch"},
+  {id:"dahliateh", name:"Pengharum Dahlia F601 Teh", unit:"pcs", category:"Kebersihan & Sanitasi", group:"branch"},
+  {id:"kabeltiskecil", name:"Kabel Ties Kecil", unit:"pack", category:"Keperluan Netop", group:"netop"},
+  {id:"kabeltisbesar", name:"Kabel Ties Besar", unit:"pack", category:"Keperluan Netop", group:"netop"},
+  {id:"lakbanhitam", name:"Lakban Hitam", unit:"pcs", category:"Keperluan Netop", group:"netop"},
+  {id:"baterai", name:"Baterai", unit:"pcs", category:"Keperluan Netop", group:"netop"}
 ];
 
 /* ---------------- UTIL ---------------- */
@@ -650,6 +689,30 @@ function markDirty(key, statusId, saveFn){
   });
 }
 
+/* ---------------- BELANJA GROUP (Branch vs Netop) ---------------- */
+// Setiap barang punya "group": 'branch' (kebutuhan belanja bulanan cabang yang sudah
+// ada) atau 'netop' (belanja lain seperti kabel ties, lakban, baterai, dll). Barang lama
+// yang belum punya field ini (data lokal/legacy) dianggap 'branch' secara default.
+function itemGroup(it){ return (it && it.group) || 'branch'; }
+function itemsInGroup(group){ return STATE.items.filter(it=>itemGroup(it)===group); }
+let activeGroup = { items:'branch', awal:'branch', mingguan:'branch', akhir:'branch' };
+function wireGroupTabs(){
+  document.querySelectorAll('.group-tabs').forEach(nav=>{
+    const section = nav.dataset.groupFor;
+    nav.querySelectorAll('button[data-group]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        activeGroup[section] = btn.dataset.group;
+        nav.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        if(section==='items') renderItemsMaster();
+        if(section==='awal') renderAwalList();
+        if(section==='mingguan') renderWeeklyForm();
+        if(section==='akhir') renderAkhirList();
+      });
+    });
+  });
+}
+
 /* ---------------- RENDER: TABS ---------------- */
 document.getElementById('tabs').addEventListener('click', (e)=>{
   const btn = e.target.closest('button[data-tab]');
@@ -679,9 +742,9 @@ document.getElementById('periodSelect').addEventListener('change', async (e)=>{
 });
 
 /* ---------------- ITEMS ---------------- */
-function categorySelectHtml(idx, currentCat){
+function categorySelectHtml(id, currentCat){
   const opts = allCategoryOptions();
-  let html = `<select data-f="category" data-i="${idx}">`;
+  let html = `<select data-f="category" data-id="${id}">`;
   opts.forEach(c=>{
     html += `<option value="${escapeHtml(c)}" ${c===currentCat?'selected':''}>${escapeHtml(c)}</option>`;
   });
@@ -691,33 +754,50 @@ function categorySelectHtml(idx, currentCat){
   html += `<option value="__new__">+ Tambah kategori baru...</option></select>`;
   return html;
 }
+function groupSelectHtml(id, currentGroup){
+  const g = itemGroup({group: currentGroup});
+  return `<select data-f="group" data-id="${id}">
+    <option value="branch" ${g==='branch'?'selected':''}>${GROUP_LABELS.branch}</option>
+    <option value="netop" ${g==='netop'?'selected':''}>${GROUP_LABELS.netop}</option>
+  </select>`;
+}
+function findItemIndexById(id){ return STATE.items.findIndex(x=>x.id===id); }
 function renderItemsMaster(){
   const wrap = document.getElementById('itemsList');
   wrap.innerHTML = "";
-  STATE.items.forEach((it, idx)=>{
+  const group = activeGroup.items;
+  const filtered = itemsInGroup(group);
+  if(!filtered.length){
+    wrap.innerHTML = `<div class="empty">Belum ada barang di kelompok ${escapeHtml(GROUP_LABELS[group])}.</div>`;
+  }
+  filtered.forEach(it=>{
     const div = document.createElement('div');
     div.className = 'item-line';
     div.innerHTML = `
       <div class="row">
-        <div class="field"><label>Nama barang</label><input type="text" data-f="name" data-i="${idx}" value="${escapeHtml(it.name)}"></div>
-        <div class="field" style="max-width:110px;"><label>Satuan</label><input type="text" data-f="unit" data-i="${idx}" value="${escapeHtml(it.unit)}"></div>
+        <div class="field"><label>Nama barang</label><input type="text" data-f="name" data-id="${it.id}" value="${escapeHtml(it.name)}"></div>
+        <div class="field" style="max-width:110px;"><label>Satuan</label><input type="text" data-f="unit" data-id="${it.id}" value="${escapeHtml(it.unit)}"></div>
       </div>
       <div class="row">
-        <div class="field"><label>Kategori</label>${categorySelectHtml(idx, it.category)}</div>
+        <div class="field"><label>Kategori</label>${categorySelectHtml(it.id, it.category)}</div>
+        <div class="field" style="max-width:210px;"><label>Kelompok Belanja</label>${groupSelectHtml(it.id, it.group)}</div>
       </div>
-      <button class="btn ghost" data-remove="${idx}">Hapus barang ini</button>
+      <button class="btn ghost" data-remove="${it.id}">Hapus barang ini</button>
     `;
     wrap.appendChild(div);
   });
   wrap.querySelectorAll('input[data-f]').forEach(inp=>{
     inp.addEventListener('input', ()=>{
-      STATE.items[+inp.dataset.i][inp.dataset.f] = inp.value;
+      const idx = findItemIndexById(inp.dataset.id);
+      if(idx<0) return;
+      STATE.items[idx][inp.dataset.f] = inp.value;
       markItemsDirty();
     });
   });
   wrap.querySelectorAll('select[data-f="category"]').forEach(sel=>{
     sel.addEventListener('change', ()=>{
-      const idx = +sel.dataset.i;
+      const idx = findItemIndexById(sel.dataset.id);
+      if(idx<0) return;
       if(sel.value === '__new__'){
         const name = (window.prompt('Nama kategori baru:')||'').trim();
         if(name){
@@ -734,9 +814,21 @@ function renderItemsMaster(){
       markItemsDirty();
     });
   });
+  wrap.querySelectorAll('select[data-f="group"]').forEach(sel=>{
+    sel.addEventListener('change', ()=>{
+      const idx = findItemIndexById(sel.dataset.id);
+      if(idx<0) return;
+      STATE.items[idx].group = sel.value;
+      renderItemsMaster(); // barang pindah kelompok, jadi keluar dari tampilan yang aktif
+      renderStockForms();
+      markItemsDirty();
+    });
+  });
   wrap.querySelectorAll('[data-remove]').forEach(b=>{
     b.addEventListener('click', ()=>{
-      STATE.items.splice(+b.dataset.remove,1);
+      const idx = findItemIndexById(b.dataset.remove);
+      if(idx<0) return;
+      STATE.items.splice(idx,1);
       renderItemsMaster(); renderStockForms();
       markItemsDirty();
     });
@@ -745,7 +837,7 @@ function renderItemsMaster(){
 function escapeHtml(s){ return String(s||"").replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
 document.getElementById('btnAddItem').addEventListener('click', ()=>{
-  STATE.items.push({id: 'itm_'+uid(), name:"Barang Baru", unit:"pcs", category:"Operasional"});
+  STATE.items.push({id: 'itm_'+uid(), name:"Barang Baru", unit:"pcs", category:"Operasional", group: activeGroup.items});
   renderItemsMaster();
   markItemsDirty();
 });
@@ -861,40 +953,45 @@ function bindItemRow(rowEl, it, storeObj, onDirty){
   }
 }
 function renderStockForms(){
-  // Stok awal
-  const awalWrap = document.getElementById('awalList');
-  awalWrap.innerHTML = "";
-  STATE.items.forEach(it=>{
-    awalWrap.insertAdjacentHTML('beforeend', itemRowTemplate(it, STATE.awal, true));
-  });
-  awalWrap.querySelectorAll('.item-line').forEach((row,idx)=>bindItemRow(row, STATE.items[idx], STATE.awal, markAwalDirty));
-  document.getElementById('awalInspector').value = STATE.awalInspector||"";
-
-  // Stok akhir
-  const akhirWrap = document.getElementById('akhirList');
-  akhirWrap.innerHTML = "";
-  STATE.items.forEach(it=>{
-    akhirWrap.insertAdjacentHTML('beforeend', itemRowTemplate(it, STATE.akhir, true));
-  });
-  akhirWrap.querySelectorAll('.item-line').forEach((row,idx)=>bindItemRow(row, STATE.items[idx], STATE.akhir, markAkhirDirty));
-  document.getElementById('akhirInspector').value = STATE.akhirInspector||"";
-
-  // Mingguan (current in-progress entry uses a temp object)
+  renderAwalList();
+  renderAkhirList();
   renderWeeklyForm();
   renderWeekHistory();
-
-  // Nota pembelian
   renderNotaList();
 }
 
+function renderGroupFilteredList(wrap, group, storeObj, withPhoto, onDirty){
+  wrap.innerHTML = "";
+  const filtered = itemsInGroup(group);
+  if(!filtered.length){
+    wrap.innerHTML = `<div class="empty">Belum ada barang di kelompok ${escapeHtml(GROUP_LABELS[group])}.</div>`;
+    return;
+  }
+  filtered.forEach(it=>{
+    wrap.insertAdjacentHTML('beforeend', itemRowTemplate(it, storeObj, withPhoto));
+  });
+  wrap.querySelectorAll('.item-line').forEach(row=>{
+    const it = STATE.items.find(x=>x.id===row.dataset.item);
+    if(it) bindItemRow(row, it, storeObj, onDirty);
+  });
+}
+
+// Stok awal
+function renderAwalList(){
+  renderGroupFilteredList(document.getElementById('awalList'), activeGroup.awal, STATE.awal, true, markAwalDirty);
+  document.getElementById('awalInspector').value = STATE.awalInspector||"";
+}
+
+// Stok akhir
+function renderAkhirList(){
+  renderGroupFilteredList(document.getElementById('akhirList'), activeGroup.akhir, STATE.akhir, true, markAkhirDirty);
+  document.getElementById('akhirInspector').value = STATE.akhirInspector||"";
+}
+
+// Mingguan (current in-progress entry uses a temp object)
 let currentWeekValues = {};
 function renderWeeklyForm(){
-  const wrap = document.getElementById('mingguanList');
-  wrap.innerHTML = "";
-  STATE.items.forEach(it=>{
-    wrap.insertAdjacentHTML('beforeend', itemRowTemplate(it, currentWeekValues, false));
-  });
-  wrap.querySelectorAll('.item-line').forEach((row,idx)=>bindItemRow(row, STATE.items[idx], currentWeekValues, markWeekDirty));
+  renderGroupFilteredList(document.getElementById('mingguanList'), activeGroup.mingguan, currentWeekValues, false, markWeekDirty);
 }
 function renderWeekHistory(){
   const wrap = document.getElementById('weekHistory');
@@ -1140,13 +1237,21 @@ function computeForecastRows(){
         row.daysLeft = null; row.reorder = 0; row.status='ok';
       }
     }
+    // Status akhir: stok akhir persis 0 selalu dianggap "Stock Habis" (paling darurat).
+    // Selain itu, dua level lama ("Segera Habis" & "Perlu Dipantau") digabung jadi satu
+    // keterangan "Segera Habis" saja, supaya daftar kebutuhan pembelian lebih sederhana.
+    if(typeof row.akhir === 'number' && row.akhir === 0){
+      row.status = 'habis';
+    } else if(row.status === 'danger' || row.status === 'watch'){
+      row.status = 'segera';
+    }
     rows.push(row);
   });
   return rows;
 }
 function statusLabel(s){
-  return s==='danger' ? '<span class="badge danger">Segera Habis</span>'
-       : s==='watch' ? '<span class="badge watch">Perlu Dipantau</span>'
+  return s==='habis' ? '<span class="badge danger">Stock Habis</span>'
+       : s==='segera' ? '<span class="badge danger">Segera Habis</span>'
        : '<span class="badge ok">Aman</span>';
 }
 function runForecast(){
@@ -1178,8 +1283,30 @@ function runForecast(){
        <div class="hint">${escapeHtml(STATE.akhirInspector||'-')}</div>`
     : `<div class="hint">Belum ada.</div>`;
 
+  renderPurchaseNeedsTable(rows);
   renderAkhirPhotoGrid();
   renderNotaPhotoGrid();
+}
+
+// Tabel "Kondisi Stok Akhir": daftar barang yang perlu dibeli bulan depan,
+// hanya barang dengan status "Stock Habis" atau "Segera Habis".
+function renderPurchaseNeedsTable(rows){
+  const card = document.getElementById('pdfPurchaseNeeds');
+  const body = document.getElementById('purchaseNeedsBody');
+  const needed = rows.filter(r=> r.status==='habis' || r.status==='segera');
+  if(!needed.length){
+    card.style.display = 'none';
+    body.innerHTML = '';
+    return;
+  }
+  card.style.display = '';
+  body.innerHTML = needed.map(r=>`
+    <tr>
+      <td>${escapeHtml(r.name)}</td>
+      <td class="num">${r.akhir} ${escapeHtml(r.unit)}</td>
+      <td class="num">${r.reorder} ${escapeHtml(r.unit)}</td>
+      <td>${statusLabel(r.status)}</td>
+    </tr>`).join('');
 }
 
 function renderAkhirPhotoGrid(){
@@ -1340,6 +1467,8 @@ async function buildReportPdf(){
   }
 
   await addSectionPages(document.getElementById('pdfArea'));
+  const purchaseCard = document.getElementById('pdfPurchaseNeeds');
+  if(purchaseCard.style.display !== 'none') await addSectionPages(purchaseCard);
   const akhirCard = document.getElementById('pdfAkhirPhotos');
   if(akhirCard.style.display !== 'none') await addSectionPages(akhirCard);
   await addNotaFullPages();
@@ -1450,6 +1579,7 @@ async function init(){
   const nowPid = periodIdFrom(computePeriodFor(new Date()).start);
   applyPeriodFromId(STATE.periodId || nowPid);
 
+  wireGroupTabs();
   renderItemsMaster();
   renderStockForms();
 
