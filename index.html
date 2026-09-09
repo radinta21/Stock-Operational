@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"></script>
 <style>
   :root{
     --paper:#EEF2EE;
@@ -358,8 +358,8 @@
     </div>
 
     <div class="card" id="pdfPurchaseNeeds" style="display:none;">
-      <h2>Kondisi Stok Akhir</h2>
-      <p class="hint">Daftar barang yang perlu segera dibeli bulan depan — hanya barang dengan status "Stock Habis" atau "Segera Habis".</p>
+      <h2>Kondisi Stok Akhir — Perlu Dibeli</h2>
+      <p class="hint">Daftar barang yang perlu segera dibeli bulan depan — hanya barang dengan status "Stock Habis" atau "Segera Habis". Pada file PDF, bagian ini akan tampil di halaman tersendiri.</p>
       <div style="overflow-x:auto;">
         <table id="purchaseNeedsTable">
           <thead>
@@ -434,13 +434,13 @@ let STATE = {
 };
 
 const CATEGORY_OPTIONS = [
-  "Kebersihan Pantry & Dapur",
-  "Kebersihan Karyawan & Toilet",
-  "Perlengkapan Tisu & Sanitasi",
-  "Alat Kebersihan & Peralatan",
-  "Pembersih & Pengharum Ruangan",
-  "Pantry & Konsumsi Kantor",
-  "Keperluan Netop"
+  "Minuman & Kebutuhan Pantry",
+  "Cairan Pembersih",
+  "Peralatan Pantry",
+  "Kebersihan Diri & Sanitasi",
+  "Kebutuhan Ruangan/Umum",
+  "Alat Tulis Kantor (ATK)",
+  "Kebutuhan Netop"
 ];
 function allCategoryOptions(){
   const extra = (STATE.customCategories||[]).filter(c=>!CATEGORY_OPTIONS.includes(c));
@@ -450,33 +450,64 @@ function allCategoryOptions(){
 const GROUP_LABELS = { branch: "Belanja Bulanan Branch", netop: "Belanja Bulanan Netop" };
 
 const SEED_ITEMS = [
-  {id:"milo", name:"Milo 3in1 (dus 18x34g)", unit:"dus", category:"Pantry", group:"branch"},
-  {id:"tongtali", name:"Tong Tali J25x50g", unit:"pcs", category:"Operasional", group:"branch"},
-  {id:"gulaku", name:"Gula Pasir Gulaku 1kg", unit:"pcs", category:"Pantry", group:"branch"},
-  {id:"kopi", name:"Kopi J.A 500g", unit:"pcs", category:"Pantry", group:"branch"},
-  {id:"hitaer", name:"Hit Aerosol Lavender Breeze 600", unit:"pcs", category:"Kebersihan & Sanitasi", group:"branch"},
-  {id:"vapeswt", name:"Vape Aerosol Sweet Powder 600", unit:"pcs", category:"Kebersihan & Sanitasi", group:"branch"},
-  {id:"vapefruit", name:"Vape Aerosol Fruit Fresh 600", unit:"pcs", category:"Kebersihan & Sanitasi", group:"branch"},
-  {id:"stellafruit", name:"Stella Pocket Fruit", unit:"pcs", category:"Kebersihan & Sanitasi", group:"branch"},
-  {id:"stellaflower", name:"Stella Pocket Flower", unit:"pcs", category:"Kebersihan & Sanitasi", group:"branch"},
-  {id:"scotch", name:"Scotch Busa Spon Hijau 30m", unit:"pcs", category:"Operasional", group:"branch"},
-  {id:"klinkantong", name:"Kantong Sampah Klin Pak Besar", unit:"pack", category:"Kebersihan & Sanitasi", group:"branch"},
-  {id:"dettolscr", name:"Dettol Hand Sanitizer Refill 200ml", unit:"pcs", category:"Kebersihan & Sanitasi", group:"branch"},
-  {id:"dettolsnst", name:"Dettol Hand Sanitizer Sensitive Refill 200ml", unit:"pcs", category:"Kebersihan & Sanitasi", group:"branch"},
-  {id:"harpic", name:"Harpic Power 450ml", unit:"pcs", category:"Kebersihan & Sanitasi", group:"branch"},
-  {id:"nicerefill", name:"Tisu Nice Refill 1000's", unit:"pack", category:"Kebersihan & Sanitasi", group:"branch"},
-  {id:"tessa", name:"Tisu Tessa Refill", unit:"pack", category:"Kebersihan & Sanitasi", group:"branch"},
-  {id:"scekonomi", name:"Sabun Cuci Piring SC Ekonomi 1850gr", unit:"pcs", category:"Kebersihan & Sanitasi", group:"branch"},
-  {id:"niceroll", name:"Tisu Roll Nice Embos 10", unit:"pack", category:"Kebersihan & Sanitasi", group:"branch"},
-  {id:"bukrim", name:"Sabun Cuci Tangan Bukrim Liquid 800ml", unit:"pcs", category:"Kebersihan & Sanitasi", group:"branch"},
-  {id:"cling", name:"Cling Pembersih Kaca 425ml", unit:"pcs", category:"Kebersihan & Sanitasi", group:"branch"},
-  {id:"dahliacndn", name:"Pengharum Dahlia F601 Candy Pudding", unit:"pcs", category:"Kebersihan & Sanitasi", group:"branch"},
-  {id:"dahliacoffee", name:"Pengharum Dahlia F601 Coffee", unit:"pcs", category:"Kebersihan & Sanitasi", group:"branch"},
-  {id:"dahliateh", name:"Pengharum Dahlia F601 Teh", unit:"pcs", category:"Kebersihan & Sanitasi", group:"branch"},
-  {id:"kabeltiskecil", name:"Kabel Ties Kecil", unit:"pack", category:"Keperluan Netop", group:"netop"},
-  {id:"kabeltisbesar", name:"Kabel Ties Besar", unit:"pack", category:"Keperluan Netop", group:"netop"},
-  {id:"lakbanhitam", name:"Lakban Hitam", unit:"pcs", category:"Keperluan Netop", group:"netop"},
-  {id:"baterai", name:"Baterai", unit:"pcs", category:"Keperluan Netop", group:"netop"}
+  // 1. Minuman & Kebutuhan Pantry
+  {id:"milo", name:"Milo 3in1 (dus 18x34g)", unit:"dus", category:"Minuman & Kebutuhan Pantry", group:"branch"},
+  {id:"tongtali", name:"Teh Tong Tji 25x50g", unit:"pcs", category:"Minuman & Kebutuhan Pantry", group:"branch"},
+  {id:"gulaku", name:"Gula Pasir Gulaku 1kg", unit:"pcs", category:"Minuman & Kebutuhan Pantry", group:"branch"},
+  {id:"kopi", name:"Kopi J.A 500g", unit:"pcs", category:"Minuman & Kebutuhan Pantry", group:"branch"},
+
+  // 2. Cairan Pembersih
+  {id:"pellbranch", name:"Pembersih Lantai Super Pell Branch", unit:"pcs", category:"Cairan Pembersih", group:"branch"},
+  {id:"pellwh", name:"Pembersih Lantai Super Pell WH", unit:"pcs", category:"Cairan Pembersih", group:"branch"},
+  {id:"jhonsonvinyl", name:"Jhonson Lantai Vinyl", unit:"pcs", category:"Cairan Pembersih", group:"branch"},
+  {id:"cling", name:"Cling Pembersih Kaca 425ml", unit:"pcs", category:"Cairan Pembersih", group:"branch"},
+  {id:"pledge", name:"Pledge (Poles Furniture)", unit:"pcs", category:"Cairan Pembersih", group:"branch"},
+  {id:"harpic", name:"Harpic Power 450ml", unit:"pcs", category:"Cairan Pembersih", group:"branch"},
+  {id:"tafwastafel", name:"Taf Pembersih Wastafel & Kloset", unit:"pcs", category:"Cairan Pembersih", group:"branch"},
+  {id:"scekonomi", name:"Sabun Colek SC Ekonomi", unit:"pcs", category:"Cairan Pembersih", group:"branch"},
+  {id:"bukrim", name:"Sabun Cuci Piring Bukrim Liquid 800ml", unit:"pcs", category:"Cairan Pembersih", group:"branch"},
+
+  // 3. Peralatan Pantry
+  {id:"scotch", name:"Scotch Busa Spon Hijau 30m", unit:"pcs", category:"Peralatan Pantry", group:"branch"},
+
+  // 4. Kebersihan Diri & Sanitasi
+  {id:"dettolscr", name:"Dettol Hand Sanitizer Refill 200ml", unit:"pcs", category:"Kebersihan Diri & Sanitasi", group:"branch"},
+  {id:"dettolsnst", name:"Dettol Hand Sanitizer Sensitive Refill 200ml", unit:"pcs", category:"Kebersihan Diri & Sanitasi", group:"branch"},
+  {id:"alkohol", name:"Alkohol", unit:"pcs", category:"Kebersihan Diri & Sanitasi", group:"branch"},
+  {id:"nicerefill", name:"Tisu Nice Refill 1000's", unit:"pack", category:"Kebersihan Diri & Sanitasi", group:"branch"},
+  {id:"tessa", name:"Tisu Tessa Refill", unit:"pack", category:"Kebersihan Diri & Sanitasi", group:"branch"},
+  {id:"niceroll", name:"Tisu Roll Nice Embos 10", unit:"pack", category:"Kebersihan Diri & Sanitasi", group:"branch"},
+
+  // 5. Kebutuhan Ruangan/Umum
+  {id:"hitaer", name:"Hit Aerosol Lavender Breeze 600 (Semprotan Nyamuk)", unit:"pcs", category:"Kebutuhan Ruangan/Umum", group:"branch"},
+  {id:"vapeswt", name:"Vape Aerosol Sweet Powder 600 (Semprotan Nyamuk)", unit:"pcs", category:"Kebutuhan Ruangan/Umum", group:"branch"},
+  {id:"vapefruit", name:"Vape Aerosol Fruit Fresh 600 (Semprotan Nyamuk)", unit:"pcs", category:"Kebutuhan Ruangan/Umum", group:"branch"},
+  {id:"stellafruit", name:"Stella Pocket Fruit (Pengharum Ruangan)", unit:"pcs", category:"Kebutuhan Ruangan/Umum", group:"branch"},
+  {id:"stellaflower", name:"Stella Pocket Flower (Pengharum Ruangan)", unit:"pcs", category:"Kebutuhan Ruangan/Umum", group:"branch"},
+  {id:"dahliacndn", name:"Pengharum Dahlia F601 Candy Pudding", unit:"pcs", category:"Kebutuhan Ruangan/Umum", group:"branch"},
+  {id:"dahliacoffee", name:"Pengharum Dahlia F601 Coffee", unit:"pcs", category:"Kebutuhan Ruangan/Umum", group:"branch"},
+  {id:"dahliateh", name:"Pengharum Dahlia F601 Teh", unit:"pcs", category:"Kebutuhan Ruangan/Umum", group:"branch"},
+  {id:"klinkantong", name:"Kantong Sampah Klin Pak Besar", unit:"pack", category:"Kebutuhan Ruangan/Umum", group:"branch"},
+  {id:"plastiksampahkecil", name:"Plastik Sampah Kecil", unit:"pack", category:"Kebutuhan Ruangan/Umum", group:"branch"},
+
+  // 6. Alat Tulis Kantor (ATK)
+  {id:"hvsa4", name:"Kertas HVS A4", unit:"rim", category:"Alat Tulis Kantor (ATK)", group:"branch"},
+  {id:"pena", name:"Pena", unit:"pcs", category:"Alat Tulis Kantor (ATK)", group:"branch"},
+  {id:"lemkertas", name:"Lem Kertas", unit:"pcs", category:"Alat Tulis Kantor (ATK)", group:"branch"},
+  {id:"doubletip", name:"Double Tip", unit:"pcs", category:"Alat Tulis Kantor (ATK)", group:"branch"},
+  {id:"stickynotes", name:"Sticky Notes", unit:"pack", category:"Alat Tulis Kantor (ATK)", group:"branch"},
+  {id:"spidolputih", name:"Spidol Putih", unit:"pcs", category:"Alat Tulis Kantor (ATK)", group:"branch"},
+  {id:"isistreplekecil", name:"Isi Streples Kecil", unit:"pack", category:"Alat Tulis Kantor (ATK)", group:"branch"},
+  {id:"isistreplebesar", name:"Isi Streples Besar", unit:"pack", category:"Alat Tulis Kantor (ATK)", group:"branch"},
+  {id:"isicutterbranch", name:"Isi Cutter (Branch)", unit:"pcs", category:"Alat Tulis Kantor (ATK)", group:"branch"},
+
+  // 7. Kebutuhan Netop
+  {id:"lakbanhitam", name:"Unibell PVC (Lakban Hitam)", unit:"pcs", category:"Kebutuhan Netop", group:"netop"},
+  {id:"kabeltiskecil", name:"Joyko Kabel Tis 15cm", unit:"pack", category:"Kebutuhan Netop", group:"netop"},
+  {id:"kabeltisbesar", name:"Joyko Kabel Tis 20cm", unit:"pack", category:"Kebutuhan Netop", group:"netop"},
+  {id:"joykoblades", name:"Joyko Blades L-15", unit:"pcs", category:"Kebutuhan Netop", group:"netop"},
+  {id:"solasikertas", name:"Solasi Kertas", unit:"pcs", category:"Kebutuhan Netop", group:"netop"},
+  {id:"baterai", name:"Battery AA", unit:"pcs", category:"Kebutuhan Netop", group:"netop"}
 ];
 
 /* ---------------- UTIL ---------------- */
@@ -848,7 +879,7 @@ function renderItemsMaster(){
 function escapeHtml(s){ return String(s||"").replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
 document.getElementById('btnAddItem').addEventListener('click', ()=>{
-  STATE.items.push({id: 'itm_'+uid(), name:"Barang Baru", unit:"pcs", category:"Operasional", group: activeGroup.items});
+  STATE.items.push({id: 'itm_'+uid(), name:"Barang Baru", unit:"pcs", category:"Alat Tulis Kantor (ATK)", group: activeGroup.items});
   renderItemsMaster();
   markItemsDirty();
 });
@@ -1262,7 +1293,7 @@ function computeForecastRows(){
     }
     points.sort((a,b)=>a.date-b.date);
 
-    let row = {name: it.name, unit: it.unit, awal:'-', akhir:'-', rate:null, daysLeft:null, emptyDate:null, reorder:'-', status:'ok'};
+    let row = {name: it.name, unit: it.unit, category: it.category || 'Lainnya', awal:'-', akhir:'-', rate:null, daysLeft:null, emptyDate:null, reorder:'-', status:'ok'};
     if(points.length>=1){ row.awal = points[0].qty; row.akhir = points[points.length-1].qty; }
     if(points.length>=2){
       const first = points[0], lastP = points[points.length-1];
@@ -1299,6 +1330,28 @@ function statusLabel(s){
   return s==='habis' ? '<span class="badge danger">Stock Habis</span>'
        : s==='segera' ? '<span class="badge danger">Segera Habis</span>'
        : '<span class="badge ok">Aman</span>';
+}
+function statusLabelText(s){
+  return s==='habis' ? 'Stock Habis' : s==='segera' ? 'Segera Habis' : 'Aman';
+}
+// Kelompokkan baris (forecast / kebutuhan beli) berdasarkan kategori barangnya,
+// urut mengikuti urutan kategori yang sudah dikenal (allCategoryOptions), supaya
+// laporan PDF konsisten & "Keperluan Netop" selalu tampil sebagai kelompok sendiri.
+function groupRowsByCategory(rows){
+  const order = allCategoryOptions();
+  const map = new Map();
+  rows.forEach(r=>{
+    const cat = r.category || 'Lainnya';
+    if(!map.has(cat)) map.set(cat, []);
+    map.get(cat).push(r);
+  });
+  const cats = Array.from(map.keys());
+  cats.sort((a,b)=>{
+    let ia = order.indexOf(a); if(ia<0) ia = order.length + cats.indexOf(a);
+    let ib = order.indexOf(b); if(ib<0) ib = order.length + cats.indexOf(b);
+    return ia-ib;
+  });
+  return cats.map(cat=>({category:cat, rows: map.get(cat)}));
 }
 function runForecast(){
   if(!STATE.periodId){ document.getElementById('forecastMeta').textContent='Muat periode terlebih dahulu di tab Pengaturan.'; return; }
@@ -1395,20 +1448,6 @@ function renderNotaPhotoGrid(){
 }
 document.getElementById('btnRunForecast').addEventListener('click', runForecast);
 
-// Tunggu semua <img> di dalam elemen benar-benar selesai dimuat/decode,
-// supaya html2canvas tidak menangkap gambar yang masih kosong (terutama
-// foto base64 berukuran besar yang butuh waktu untuk decode).
-function waitForImages(el){
-  const imgs = Array.from(el.querySelectorAll('img'));
-  return Promise.all(imgs.map(img=>{
-    if(img.complete && img.naturalWidth) return Promise.resolve();
-    return new Promise(resolve=>{
-      img.addEventListener('load', resolve, {once:true});
-      img.addEventListener('error', resolve, {once:true});
-    });
-  }));
-}
-
 // Deteksi format gambar dari data URI, supaya addImage() jsPDF cocok
 // (foto dari kamera HP bisa JPEG maupun PNG).
 function imgFormatFromDataUri(uri){
@@ -1430,35 +1469,126 @@ function loadImageSize(dataUri){
   });
 }
 
+// PDF laporan dibangun langsung dengan teks/tabel (jspdf-autotable), BUKAN dengan
+// "screenshot" (html2canvas) seperti sebelumnya. Alasannya: html2canvas hanya
+// menghasilkan satu gambar panjang yang lalu dipotong per-tinggi-halaman secara
+// membabi buta, sehingga baris tabel & kartu foto bisa terpotong tepat di batas
+// halaman. Dengan autoTable, setiap baris tabel otomatis pindah ke halaman
+// berikutnya secara utuh (tidak pernah terpotong), header tabel diulang tiap
+// halaman baru, dan setiap bagian laporan dikelompokkan per kategori barang.
 async function buildReportPdf(){
   const { jsPDF } = window.jspdf;
   const pdf = new jsPDF('p','mm','a4');
   const pageW = pdf.internal.pageSize.getWidth();
   const pageH = pdf.internal.pageSize.getHeight();
-  let firstPage = true;
+  const M = 14;               // margin halaman
+  const CW = pageW - M*2;     // lebar area konten
+  const C_GREEN_DEEP = [31,78,54];
+  const C_GREEN = [47,111,78];
+  const C_INK = [30,42,34];
+  const C_INK_SOFT = [91,107,95];
+  const C_LINE = [215,222,215];
+  const C_TAB_BG = [226,233,225];
+  const C_OK_FG = [47,111,78];
+  const C_DANGER_FG = [155,58,24];
+  const C_ROW_ALT = [248,250,248];
 
-  async function addSectionPages(el){
-    if(!el) return;
-    await waitForImages(el);
-    const canvas = await html2canvas(el, {scale:2, backgroundColor:'#ffffff'});
-    const imgData = canvas.toDataURL('image/jpeg', 0.92);
-    const imgH = canvas.height * pageW / canvas.width;
-    let heightLeft = imgH, position = 0;
-    if(!firstPage) pdf.addPage();
-    firstPage = false;
-    pdf.addImage(imgData,'JPEG',0,position,pageW,imgH);
-    heightLeft -= pageH;
-    while(heightLeft > 0){
-      position = heightLeft - imgH;
-      pdf.addPage();
-      pdf.addImage(imgData,'JPEG',0,position,pageW,imgH);
-      heightLeft -= pageH;
-    }
+  let cursorY = M;
+
+  function newPage(){ pdf.addPage(); cursorY = M; }
+  // Pastikan ada cukup ruang vertikal tersisa di halaman berjalan; kalau tidak,
+  // pindah ke halaman baru DULU — supaya judul/section tidak "nyangkut" sendirian
+  // di ujung bawah sebuah halaman lalu isinya baru muncul di halaman berikutnya.
+  function ensureSpace(h){ if(cursorY + h > pageH - M) newPage(); }
+
+  function reportHeader(){
+    pdf.setFont(undefined,'bold');
+    pdf.setFontSize(16);
+    pdf.setTextColor.apply(pdf, C_GREEN_DEEP);
+    pdf.text('Laporan Stok Barang Operasional', M, cursorY+7);
+    pdf.setFont(undefined,'normal');
+    pdf.setFontSize(10);
+    pdf.setTextColor.apply(pdf, C_INK_SOFT);
+    pdf.text('Cabang Campang Raya', M, cursorY+13);
+    const periode = STATE.periodId ? periodLabel(STATE.periodId) : '-';
+    pdf.setFont(undefined,'bold');
+    pdf.setFontSize(10);
+    pdf.setTextColor.apply(pdf, C_GREEN);
+    pdf.text('Periode: '+periode, pageW-M, cursorY+7, {align:'right'});
+    pdf.setDrawColor.apply(pdf, C_GREEN);
+    pdf.setLineWidth(0.8);
+    pdf.line(M, cursorY+18, pageW-M, cursorY+18);
+    cursorY += 25;
   }
 
-  // Setiap nota pembelian mendapat 1 halaman penuh, foto ditampilkan
-  // sebesar mungkin (bukan thumbnail kecil di grid) supaya tulisan pada
-  // nota tetap bisa dibaca.
+  function sectionTitle(text){
+    ensureSpace(13);
+    pdf.setFont(undefined,'bold');
+    pdf.setFontSize(12.5);
+    pdf.setTextColor.apply(pdf, C_GREEN_DEEP);
+    pdf.text(text, M, cursorY+5);
+    cursorY += 10;
+  }
+
+  function bodyText(text, opts){
+    opts = opts||{};
+    pdf.setFont(undefined, opts.bold?'bold':'normal');
+    pdf.setFontSize(opts.size||9);
+    pdf.setTextColor.apply(pdf, opts.color||C_INK_SOFT);
+    const lines = pdf.splitTextToSize(text, CW);
+    ensureSpace(lines.length*4.2+2);
+    pdf.text(lines, M, cursorY+3.2);
+    cursorY += lines.length*4.2 + (opts.marginBottom!=null ? opts.marginBottom : 5);
+  }
+
+  // Judul kelompok kategori, dijamin selalu diikuti minimal satu baris tabel di
+  // halaman yang sama (kalau ruang tak cukup, judul ikut pindah ke halaman baru).
+  function categoryHeading(text){
+    if(pageH - M - cursorY < 26) newPage();
+    pdf.setFillColor.apply(pdf, C_TAB_BG);
+    pdf.rect(M, cursorY, CW, 7, 'F');
+    pdf.setFont(undefined,'bold');
+    pdf.setFontSize(9.5);
+    pdf.setTextColor.apply(pdf, C_GREEN_DEEP);
+    pdf.text(text, M+3, cursorY+4.9);
+    cursorY += 7 + 3;
+  }
+
+  function statusColor(raw){
+    const s = String(raw||'');
+    return (s.indexOf('Stock Habis')>=0 || s.indexOf('Segera Habis')>=0) ? C_DANGER_FG : C_OK_FG;
+  }
+
+  // Gambar satu tabel per kategori (autoTable menangani sendiri page-break-nya:
+  // baris tidak pernah terpotong, dan header tabel diulang di tiap halaman baru).
+  function drawGroupedTable(groups, columns, colStyles){
+    groups.forEach(g=>{
+      if(!g.rows.length) return;
+      categoryHeading(g.category);
+      pdf.autoTable({
+        startY: cursorY,
+        margin: {left:M, right:M, top:M, bottom:M},
+        head: [columns.map(c=>c.header)],
+        body: g.rows.map(r=> columns.map(c=>c.get(r))),
+        theme: 'grid',
+        styles:{ font:'helvetica', fontSize:8.3, cellPadding:1.8, textColor:C_INK, lineColor:C_LINE, lineWidth:0.15, valign:'middle' },
+        headStyles:{ fillColor:C_GREEN_DEEP, textColor:255, fontStyle:'bold', fontSize:8.3 },
+        alternateRowStyles:{ fillColor:C_ROW_ALT },
+        columnStyles: colStyles,
+        didParseCell: function(data){
+          const colDef = columns[data.column.index];
+          if(data.section==='body' && colDef && colDef.statusCol){
+            data.cell.styles.textColor = statusColor(data.cell.raw);
+            data.cell.styles.fontStyle = 'bold';
+          }
+        }
+      });
+      cursorY = pdf.lastAutoTable.finalY + 8;
+    });
+  }
+
+  // Setiap nota pembelian mendapat 1 halaman penuh, foto ditampilkan sebesar
+  // mungkin (bukan thumbnail kecil) supaya tulisan pada nota tetap bisa dibaca.
   async function addNotaFullPages(){
     const notas = (STATE.notaPembelian || [])
       .filter(n => n && n.photo)
@@ -1466,32 +1596,29 @@ async function buildReportPdf(){
       .sort((a,b)=> (a.date||'').localeCompare(b.date||''));
     if(!notas.length) return;
 
-    const margin = 14;
     for(const n of notas){
-      if(!firstPage) pdf.addPage();
-      firstPage = false;
-
+      newPage();
       pdf.setFont(undefined,'bold');
       pdf.setFontSize(13);
-      pdf.setTextColor(31,78,54); // --green-deep
-      pdf.text('Lampiran: Foto Nota Pembelian', margin, 14);
+      pdf.setTextColor.apply(pdf, C_GREEN_DEEP);
+      pdf.text('Lampiran: Foto Nota Pembelian', M, 14);
 
       pdf.setFont(undefined,'normal');
       pdf.setFontSize(10.5);
-      pdf.setTextColor(30,42,34); // --ink
-      pdf.text(fmtDate(n.date), margin, 21);
+      pdf.setTextColor.apply(pdf, C_INK);
+      pdf.text(fmtDate(n.date), M, 21);
 
       let topY = 26;
       if(n.note){
         pdf.setFontSize(9.5);
-        pdf.setTextColor(91,107,95); // --ink-soft
-        const noteLines = pdf.splitTextToSize(n.note, pageW - margin*2);
-        pdf.text(noteLines, margin, topY);
+        pdf.setTextColor.apply(pdf, C_INK_SOFT);
+        const noteLines = pdf.splitTextToSize(n.note, CW);
+        pdf.text(noteLines, M, topY);
         topY += noteLines.length * 4.5 + 3;
       }
 
-      const availW = pageW - margin*2;
-      const availH = pageH - topY - margin;
+      const availW = CW;
+      const availH = pageH - topY - M;
       let drawW = availW, drawH = availH;
 
       const size = await loadImageSize(n.photo);
@@ -1500,24 +1627,132 @@ async function buildReportPdf(){
         drawH = drawW / ratio;
         if(drawH > availH){ drawH = availH; drawW = drawH * ratio; }
       }
-      const x = margin + (availW - drawW) / 2;
+      const x = M + (availW - drawW) / 2;
       const y = topY + (availH - drawH) / 2;
       try{
         pdf.addImage(n.photo, imgFormatFromDataUri(n.photo), x, y, drawW, drawH);
       }catch(e){
         pdf.setFontSize(10);
         pdf.setTextColor(200,60,60);
-        pdf.text('(Gagal memuat foto nota ini)', margin, topY + 10);
+        pdf.text('(Gagal memuat foto nota ini)', M, topY + 10);
       }
     }
   }
 
-  await addSectionPages(document.getElementById('pdfArea'));
-  const purchaseCard = document.getElementById('pdfPurchaseNeeds');
-  if(purchaseCard.style.display !== 'none') await addSectionPages(purchaseCard);
-  const akhirCard = document.getElementById('pdfAkhirPhotos');
-  if(akhirCard.style.display !== 'none') await addSectionPages(akhirCard);
+  /* ================= HEADER ================= */
+  reportHeader();
+
+  /* ================= FORECAST (dikelompokkan per kategori) ================= */
+  sectionTitle('Laporan & Forecast Kebutuhan Bulan Depan');
+  const rows = computeForecastRows();
+  bodyText('Periode '+fmtDate(STATE.periodStart)+' – '+fmtDate(STATE.periodEnd)+'. Dihitung dari data stok awal, '+STATE.weeks.length+' kali cek mingguan, dan stok akhir.', {marginBottom:6});
+
+  drawGroupedTable(groupRowsByCategory(rows), [
+    {header:'Barang', get:r=>r.name},
+    {header:'Awal', get:r=>String(r.awal)},
+    {header:'Akhir', get:r=>String(r.akhir)},
+    {header:'Pakai/Hari', get:r=>r.rate!=null ? r.rate.toFixed(2) : '-'},
+    {header:'Sisa Hari', get:r=>r.daysLeft!=null ? String(r.daysLeft) : '-'},
+    {header:'Perkiraan Habis', get:r=>r.emptyDate ? fmtDate(r.emptyDate) : '-'},
+    {header:'Saran Beli', get:r=>r.reorder+' '+r.unit},
+    {header:'Status', get:r=>statusLabelText(r.status), statusCol:true}
+  ], {
+    0:{cellWidth:'auto'},
+    1:{cellWidth:13, halign:'right'},
+    2:{cellWidth:13, halign:'right'},
+    3:{cellWidth:17, halign:'right'},
+    4:{cellWidth:14, halign:'right'},
+    5:{cellWidth:22},
+    6:{cellWidth:20, halign:'right'},
+    7:{cellWidth:22}
+  });
+
+  /* ================= KONDISI STOK AKHIR — PERLU DIBELI (per kategori) ================= */
+  const needed = rows.filter(r=> r.status==='habis' || r.status==='segera');
+  if(needed.length){
+    newPage();
+    sectionTitle('Kondisi Stok Akhir — Perlu Dibeli');
+    drawGroupedTable(groupRowsByCategory(needed), [
+      {header:'Barang', get:r=>r.name},
+      {header:'Stok Akhir', get:r=>r.akhir+' '+r.unit},
+      {header:'Jumlah Pembelian', get:r=>r.reorder+' '+r.unit},
+      {header:'Status', get:r=>statusLabelText(r.status), statusCol:true}
+    ], {
+      0:{cellWidth:'auto'},
+      1:{cellWidth:34, halign:'right'},
+      2:{cellWidth:38, halign:'right'},
+      3:{cellWidth:30}
+    });
+  }
+
+  /* ================= LAMPIRAN: FOTO KONDISI STOK AKHIR (per kategori) ================= */
+  const akhirItems = STATE.items.filter(it => STATE.akhir[it.id] && STATE.akhir[it.id].photo);
+  if(akhirItems.length){
+    newPage();
+    sectionTitle('Lampiran: Kondisi Stok Akhir');
+    bodyText('Foto kondisi stok akhir tiap barang beserta namanya.');
+
+    // 3 kolom x 4 baris = 12 foto per halaman penuh.
+    const cols = 3, gap = 4;
+    const cellW = (CW - gap*(cols-1))/cols;
+    const imgH = 48, captionH = 13, rowH = imgH + captionH + gap;
+
+    const akhirGroups = groupRowsByCategory(akhirItems.map(it=>({
+      _item: it, category: it.category || 'Lainnya'
+    })));
+
+    for(const grp of akhirGroups){
+      categoryHeading(grp.category);
+      const items = grp.rows.map(r=>r._item);
+      for(let i=0;i<items.length;i+=cols){
+        ensureSpace(rowH);
+        const rowItems = items.slice(i, i+cols);
+        for(let c=0;c<rowItems.length;c++){
+          const it = rowItems[c];
+          const v = STATE.akhir[it.id];
+          const x = M + c*(cellW+gap);
+          const y = cursorY;
+          pdf.setDrawColor.apply(pdf, C_LINE);
+          pdf.setLineWidth(0.2);
+          pdf.rect(x, y, cellW, imgH+captionH);
+          try{
+            const size = await loadImageSize(v.photo);
+            let dw = cellW-4, dh = imgH-4;
+            if(size && size.width && size.height){
+              const ratio = size.width/size.height;
+              dh = dw/ratio;
+              if(dh > imgH-4){ dh = imgH-4; dw = dh*ratio; }
+            }
+            const ix = x + (cellW-dw)/2;
+            const iy = y + 2 + ((imgH-4)-dh)/2;
+            pdf.addImage(v.photo, imgFormatFromDataUri(v.photo), ix, iy, dw, dh);
+          }catch(e){}
+          pdf.setFont(undefined,'bold'); pdf.setFontSize(8);
+          pdf.setTextColor.apply(pdf, C_INK);
+          const nameLines = pdf.splitTextToSize(it.name, cellW-4).slice(0,2);
+          pdf.text(nameLines, x+2, y+imgH+4);
+          pdf.setFont(undefined,'normal'); pdf.setFontSize(7.3);
+          pdf.setTextColor.apply(pdf, C_INK_SOFT);
+          pdf.text((v.qty!=null?v.qty:'-')+' '+it.unit, x+2, y+imgH+4+nameLines.length*3.4);
+        }
+        cursorY += rowH;
+      }
+      cursorY += 2;
+    }
+  }
+
+  /* ================= LAMPIRAN: FOTO NOTA PEMBELIAN ================= */
   await addNotaFullPages();
+
+  /* ================= FOOTER: nomor halaman di semua halaman ================= */
+  const pageCount = pdf.internal.getNumberOfPages();
+  for(let p=1; p<=pageCount; p++){
+    pdf.setPage(p);
+    pdf.setFont(undefined,'normal'); pdf.setFontSize(8);
+    pdf.setTextColor.apply(pdf, C_INK_SOFT);
+    pdf.text('Stok Operasional — Campang Raya', M, pageH-8);
+    pdf.text('Halaman '+p+' dari '+pageCount, pageW-M, pageH-8, {align:'right'});
+  }
 
   return pdf;
 }
