@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
   :root{
     --paper:#EEF2EE;
@@ -338,6 +339,7 @@
   <section class="panel" id="panel-forecast">
     <div class="card" id="pdfArea">
       <h2>Laporan &amp; Forecast Kebutuhan Bulan Depan</h2>
+      <p class="hint">Ringkasan pemakaian, dan Berapa hari lagi stok tiap barang diperkirakan habis, dihitung dari stok awal, cek mingguan, dan stok akhir periode ini.</p>
       <div id="forecastMeta" class="hint"></div>
       <div style="overflow-x:auto;">
         <table id="forecastTable">
@@ -357,7 +359,7 @@
 
     <div class="card" id="pdfPurchaseNeeds" style="display:none;">
       <h2>Kondisi Stok Akhir</h2>
-      <p class="hint">Rencana Pembelian Barang Periode Bulan Berikutnya</p>
+      <p class="hint">Daftar barang yang perlu segera dibeli bulan depan — hanya barang dengan status "Stock Habis" atau "Segera Habis".</p>
       <div style="overflow-x:auto;">
         <table id="purchaseNeedsTable">
           <thead>
@@ -370,11 +372,13 @@
 
     <div class="card" id="pdfAkhirPhotos" style="display:none;">
       <h2>Lampiran: Kondisi Stok Akhir</h2>
+      <p class="hint">Foto kondisi stok akhir tiap barang beserta namanya, dilampirkan sebagai halaman tambahan pada laporan.</p>
       <div id="akhirPhotoGrid" class="photo-grid"></div>
     </div>
 
     <div class="card" id="pdfNotaPhotos" style="display:none;">
       <h2>Lampiran: Foto Nota Pembelian</h2>
+      <p class="hint">Foto nota pembelian periode ini. Pratinjau di bawah berupa thumbnail kecil, namun pada PDF tiap nota akan tampil 1 halaman penuh agar tulisan pada nota tetap terbaca.</p>
       <div id="notaPhotoGrid" class="photo-grid"></div>
     </div>
 
@@ -419,7 +423,14 @@ let STATE = {
   akhirInspector: "",
   sigMonthly: "",
   notaPembelian: [], // [{id, date, note, photo}]
-  customCategories: []
+  customCategories: [],
+  // itemId -> true untuk barang yang berubah tapi belum dikonfirmasi tersimpan di server.
+  // Disimpan di STATE (ikut ter-cache ke localStorage) supaya kalau HP ditutup/direfresh
+  // sebelum sempat tersinkron, barang yang masih "menunggu" itu TIDAK terlupakan — beda
+  // dengan kalau ini disimpan di variabel biasa yang hilang saat halaman dimuat ulang.
+  dirtyAwal: {},
+  dirtyAkhir: {},
+  dirtyWeek: {}
 };
 
 const CATEGORY_OPTIONS = [
@@ -628,12 +639,16 @@ async function apiOnce(action, payload, timeoutMs){
 }
 async function api(action, payload){
   if(!CFG.scriptUrl){ toast("Koneksi server belum diatur"); throw new Error("no url"); }
+  // 35 detik (dari 25 detik): autosave sekarang biasanya hanya mengirim 1 barang yang berubah
+  // (lihat STATE.dirtyAwal/dirtyAkhir/dirtyWeek), jadi payload jauh lebih kecil dari sebelumnya —
+  // tapi foto tetap butuh sedikit ruang ekstra di koneksi yang lambat.
+  const TIMEOUT_MS = 35000;
   try{
-    return await apiOnce(action, payload, 25000);
+    return await apiOnce(action, payload, TIMEOUT_MS);
   }catch(e){
     // one automatic retry for transient network/timeout errors, not for server-side/logic errors
     if(/terhubung ke server|Waktu koneksi habis/.test(e.message)){
-      return await apiOnce(action, payload, 25000);
+      return await apiOnce(action, payload, TIMEOUT_MS);
     }
     throw e;
   }
@@ -928,11 +943,14 @@ function itemRowTemplate(it, storeObj, withPhoto){
     </div>
   </div>`;
 }
-function bindItemRow(rowEl, it, storeObj, onDirty){
+// dirtyMap: kalau diisi (mis. STATE.dirtyAwal), itemId yang berubah dicatat di sini supaya
+// autosave hanya mengirim barang yang benar-benar berubah, bukan seluruh form.
+function bindItemRow(rowEl, it, storeObj, onDirty, dirtyMap){
   const qtyInput = rowEl.querySelector('.qty-input');
   qtyInput.addEventListener('input', ()=>{
     storeObj[it.id] = storeObj[it.id] || {};
     storeObj[it.id].qty = qtyInput.value === '' ? null : Number(qtyInput.value);
+    if(dirtyMap) dirtyMap[it.id] = true;
     if(onDirty) onDirty();
   });
   const photoInput = rowEl.querySelector('.photo-input');
@@ -944,6 +962,7 @@ function bindItemRow(rowEl, it, storeObj, onDirty){
       storeObj[it.id].photo = dataUrl;
       const row = photoInput.closest('.photo-row');
       row.querySelector('.photo-thumb,.photo-placeholder').outerHTML = `<img class="photo-thumb" src="${dataUrl}">`;
+      if(dirtyMap) dirtyMap[it.id] = true;
       if(onDirty) onDirty();
     });
   }
@@ -956,7 +975,7 @@ function renderStockForms(){
   renderNotaList();
 }
 
-function renderGroupFilteredList(wrap, group, storeObj, withPhoto, onDirty){
+function renderGroupFilteredList(wrap, group, storeObj, withPhoto, onDirty, dirtyMap){
   wrap.innerHTML = "";
   const filtered = itemsInGroup(group);
   if(!filtered.length){
@@ -968,26 +987,37 @@ function renderGroupFilteredList(wrap, group, storeObj, withPhoto, onDirty){
   });
   wrap.querySelectorAll('.item-line').forEach(row=>{
     const it = STATE.items.find(x=>x.id===row.dataset.item);
-    if(it) bindItemRow(row, it, storeObj, onDirty);
+    if(it) bindItemRow(row, it, storeObj, onDirty, dirtyMap);
   });
 }
 
+// PENTING: dulu setiap autosave mengirim SELURUH isi STATE.awal / STATE.akhir (semua barang,
+// termasuk semua foto yang sudah diisi sejauh ini di form itu) walau yang baru diubah cuma
+// SATU barang. Akibatnya, makin banyak barang yang sudah difoto di form, makin besar juga
+// payload yang dikirim ulang setiap kali ada perubahan sekecil apa pun — barang yang diisi
+// belakangan (mis. Milo, kalau kebetulan urutannya di bawah) jadi kena "ongkos" foto semua
+// barang sebelumnya, sampai gagal kena batas waktu koneksi.
+// STATE.dirtyAwal / dirtyAkhir / dirtyWeek menyimpan itemId yang berubah sejak sinkron
+// terakhir; saat autosave, hanya barang di dalamnya yang dikirim ke server (lihat
+// doSaveAwal/doSaveAkhir/doSaveWeek). Disimpan di STATE (bukan variabel biasa) supaya tetap
+// tercatat walau halaman direfresh sebelum sempat tersinkron.
+
 // Stok awal
 function renderAwalList(){
-  renderGroupFilteredList(document.getElementById('awalList'), activeGroup.awal, STATE.awal, true, markAwalDirty);
+  renderGroupFilteredList(document.getElementById('awalList'), activeGroup.awal, STATE.awal, true, markAwalDirty, STATE.dirtyAwal);
   document.getElementById('awalInspector').value = STATE.awalInspector||"";
 }
 
 // Stok akhir
 function renderAkhirList(){
-  renderGroupFilteredList(document.getElementById('akhirList'), activeGroup.akhir, STATE.akhir, true, markAkhirDirty);
+  renderGroupFilteredList(document.getElementById('akhirList'), activeGroup.akhir, STATE.akhir, true, markAkhirDirty, STATE.dirtyAkhir);
   document.getElementById('akhirInspector').value = STATE.akhirInspector||"";
 }
 
 // Mingguan (current in-progress entry uses a temp object)
 let currentWeekValues = {};
 function renderWeeklyForm(){
-  renderGroupFilteredList(document.getElementById('mingguanList'), activeGroup.mingguan, currentWeekValues, false, markWeekDirty);
+  renderGroupFilteredList(document.getElementById('mingguanList'), activeGroup.mingguan, currentWeekValues, false, markWeekDirty, STATE.dirtyWeek);
 }
 function renderWeekHistory(){
   const wrap = document.getElementById('weekHistory');
@@ -1001,11 +1031,27 @@ function renderWeekHistory(){
   });
 }
 
+// Ambil hanya barang yang tercatat "berubah" di dirtyMap (kalau ada), supaya payload yang
+// dikirim ke server tetap kecil. Kalau dirtyMap kosong (misalnya tombol "Simpan" dipencet
+// tanpa ada perubahan baru sejak sinkron terakhir), kirim semua sebagai jaring pengaman.
+function pickValuesToSend(storeObj, dirtyMap){
+  const dirtyIds = dirtyMap ? Object.keys(dirtyMap) : [];
+  if(!dirtyIds.length) return storeObj;
+  const out = {};
+  dirtyIds.forEach(id=>{ if(storeObj[id]) out[id] = storeObj[id]; });
+  return out;
+}
+function clearDirtyMap(dirtyMap){
+  Object.keys(dirtyMap).forEach(k=> delete dirtyMap[k]);
+}
+
 async function doSaveAwal(){
   if(!STATE.periodId) return;
   STATE.awalInspector = document.getElementById('awalInspector').value.trim();
   const date = document.getElementById('awalDate').value || STATE.periodStart;
-  await api('saveEntry', {periodId: STATE.periodId, type:'awal', date, inspector: STATE.awalInspector, values: STATE.awal});
+  const values = pickValuesToSend(STATE.awal, STATE.dirtyAwal);
+  await api('saveEntry', {periodId: STATE.periodId, type:'awal', date, inspector: STATE.awalInspector, values});
+  clearDirtyMap(STATE.dirtyAwal);
   cacheState();
 }
 document.getElementById('btnSaveAwal').addEventListener('click', async ()=>{
@@ -1026,7 +1072,9 @@ async function doSaveAkhir(){
   STATE.akhirInspector = document.getElementById('akhirInspector').value.trim();
   STATE.sigMonthly = sigCanvases.sigMonthly.toDataURL('image/png');
   const date = document.getElementById('akhirDate').value || STATE.periodEnd;
-  await api('saveEntry', {periodId: STATE.periodId, type:'akhir', date, inspector: STATE.akhirInspector, values: STATE.akhir, signature: STATE.sigMonthly});
+  const values = pickValuesToSend(STATE.akhir, STATE.dirtyAkhir);
+  await api('saveEntry', {periodId: STATE.periodId, type:'akhir', date, inspector: STATE.akhirInspector, values, signature: STATE.sigMonthly});
+  clearDirtyMap(STATE.dirtyAkhir);
   cacheState();
 }
 document.getElementById('btnSaveAkhir').addEventListener('click', async ()=>{
@@ -1049,7 +1097,9 @@ async function doSaveWeek(){
   const inspector = document.getElementById('weekInspector').value.trim();
   const sig = sigCanvases.sigWeekly.toDataURL('image/png');
   const entry = {week, date, inspector, sig, values: JSON.parse(JSON.stringify(currentWeekValues))};
-  await api('saveEntry', {periodId: STATE.periodId, type:'mingguan', week, date, inspector, values: currentWeekValues, signature: sig});
+  const values = pickValuesToSend(currentWeekValues, STATE.dirtyWeek);
+  await api('saveEntry', {periodId: STATE.periodId, type:'mingguan', week, date, inspector, values, signature: sig});
+  clearDirtyMap(STATE.dirtyWeek);
   STATE.weeks = STATE.weeks.filter(w=>w.week!==week);
   STATE.weeks.push(entry);
   cacheState();
@@ -1345,6 +1395,20 @@ function renderNotaPhotoGrid(){
 }
 document.getElementById('btnRunForecast').addEventListener('click', runForecast);
 
+// Tunggu semua <img> di dalam elemen benar-benar selesai dimuat/decode,
+// supaya html2canvas tidak menangkap gambar yang masih kosong (terutama
+// foto base64 berukuran besar yang butuh waktu untuk decode).
+function waitForImages(el){
+  const imgs = Array.from(el.querySelectorAll('img'));
+  return Promise.all(imgs.map(img=>{
+    if(img.complete && img.naturalWidth) return Promise.resolve();
+    return new Promise(resolve=>{
+      img.addEventListener('load', resolve, {once:true});
+      img.addEventListener('error', resolve, {once:true});
+    });
+  }));
+}
+
 // Deteksi format gambar dari data URI, supaya addImage() jsPDF cocok
 // (foto dari kamera HP bisa JPEG maupun PNG).
 function imgFormatFromDataUri(uri){
@@ -1366,338 +1430,94 @@ function loadImageSize(dataUri){
   });
 }
 
-/* ---------------- PDF EXPORT ----------------
- * Dibangun elemen-per-elemen langsung dengan jsPDF (teks, tabel, gambar) — BUKAN
- * screenshot HTML seperti sebelumnya. Pendekatan screenshot memotong gambar hasil
- * render halaman secara piksel tanpa peduli batas baris tabel/foto, sehingga baris
- * tabel atau foto bisa terpotong tepat di tengah saat pindah halaman. Dengan render
- * native ini, setiap baris tabel dan setiap foto SELALU dicek dulu apakah muat di
- * sisa halaman; kalau tidak, seluruhnya (bukan sebagian) dipindah utuh ke halaman
- * baru berikutnya, dan halaman baru selalu diberi margin atas yang konsisten supaya
- * hasilnya rapi dan profesional. */
-const PDF_MARGIN = 12;
-
-function pdfStatusStyle(status){
-  if(status==='habis') return {bg:[251,228,220], fg:[155,58,24], label:'Stock Habis'};
-  if(status==='segera') return {bg:[251,228,220], fg:[155,58,24], label:'Segera Habis'};
-  return {bg:[228,240,230], fg:[47,111,78], label:'Aman'};
-}
-
-// Judul seksi + garis bawah hijau + (opsional) sub-teks. reserve = perkiraan tinggi
-// (mm) konten yang akan menyusul (misal header+baris pertama tabel) — dicek sekalian
-// supaya judul tidak "yatim" sendirian di ujung halaman sementara isinya lompat ke
-// halaman berikutnya.
-function pdfSectionTitle(pdf, ctx, title, subtitle, reserve){
-  reserve = reserve || 0;
-  const need = 14 + (subtitle ? 10 : 0) + reserve;
-  if(ctx.y + need > ctx.pageH - PDF_MARGIN){ pdf.addPage(); ctx.y = PDF_MARGIN; }
-  pdf.setFont(undefined,'bold');
-  pdf.setFontSize(13.5);
-  pdf.setTextColor(31,78,54);
-  pdf.text(title, PDF_MARGIN, ctx.y+2);
-  ctx.y += 5.5;
-  pdf.setDrawColor(47,111,78);
-  pdf.setLineWidth(0.6);
-  pdf.line(PDF_MARGIN, ctx.y, ctx.pageW-PDF_MARGIN, ctx.y);
-  ctx.y += 6;
-  if(subtitle){
-    pdf.setFont(undefined,'normal');
-    pdf.setFontSize(9.5);
-    pdf.setTextColor(91,107,95);
-    const lines = pdf.splitTextToSize(subtitle, ctx.pageW - PDF_MARGIN*2);
-    pdf.text(lines, PDF_MARGIN, ctx.y);
-    ctx.y += lines.length*4.3 + 4;
-  }
-}
-
-// Tabel generik dengan pagination sadar-baris: satu baris tidak akan pernah
-// dipotong di dua halaman — kalau tidak muat, seluruh baris pindah ke halaman baru
-// dan header tabel digambar ulang di sana.
-function pdfDrawTable(pdf, ctx, columns, rows, opts){
-  opts = opts || {};
-  const contentW = ctx.pageW - PDF_MARGIN*2;
-  const fontSize = 8.6;
-  const headerH = 8.5;
-  const padV = 2.1;
-  const lineH = 3.6;
-
-  function drawHeader(){
-    pdf.setFillColor(31,78,54);
-    pdf.rect(PDF_MARGIN, ctx.y, contentW, headerH, 'F');
-    pdf.setFont(undefined,'bold');
-    pdf.setFontSize(fontSize);
-    pdf.setTextColor(255,255,255);
-    let x = PDF_MARGIN;
-    columns.forEach(c=>{
-      const align = c.align || 'left';
-      const tx = align==='right' ? x+c.width-2.5 : align==='center' ? x+c.width/2 : x+2.5;
-      pdf.text(c.label, tx, ctx.y+headerH/2+1.3, {align});
-      x += c.width;
-    });
-    ctx.y += headerH;
-  }
-
-  if(ctx.y + headerH + lineH + padV*2 > ctx.pageH - PDF_MARGIN){ pdf.addPage(); ctx.y = PDF_MARGIN; }
-  drawHeader();
-
-  rows.forEach((r, ri)=>{
-    const cellLines = columns.map(c=> c.badge ? [''] : pdf.splitTextToSize(String(c.value(r)), c.width-5));
-    const maxLines = Math.max.apply(null, cellLines.map(l=>l.length).concat([1]));
-    const rowH = Math.max(maxLines*lineH + padV*2, 9);
-
-    if(ctx.y + rowH > ctx.pageH - PDF_MARGIN){
-      pdf.addPage();
-      ctx.y = PDF_MARGIN;
-      if(opts.continuedTitle){
-        pdf.setFont(undefined,'bold'); pdf.setFontSize(10.5); pdf.setTextColor(91,107,95);
-        pdf.text(opts.continuedTitle, PDF_MARGIN, ctx.y+2);
-        ctx.y += 7;
-      }
-      drawHeader();
-    }
-
-    if(ri % 2 === 1){
-      pdf.setFillColor(248,250,248);
-      pdf.rect(PDF_MARGIN, ctx.y, contentW, rowH, 'F');
-    }
-
-    let x = PDF_MARGIN;
-    columns.forEach((c, ci)=>{
-      const align = c.align || 'left';
-      if(c.badge){
-        const style = c.badge(r);
-        pdf.setFont(undefined,'bold');
-        pdf.setFontSize(fontSize-0.4);
-        const textW = pdf.getTextWidth(style.label);
-        const boxW = Math.min(c.width-4, textW+6);
-        const boxX = x + (c.width-boxW)/2;
-        const boxH = rowH-padV*2;
-        pdf.setFillColor(style.bg[0],style.bg[1],style.bg[2]);
-        pdf.roundedRect(boxX, ctx.y+padV, boxW, boxH, 1.1, 1.1, 'F');
-        pdf.setTextColor(style.fg[0],style.fg[1],style.fg[2]);
-        pdf.text(style.label, x+c.width/2, ctx.y+rowH/2+1.1, {align:'center'});
-      } else {
-        pdf.setFont(undefined,'normal');
-        pdf.setFontSize(fontSize);
-        pdf.setTextColor(30,42,34);
-        const tx = align==='right' ? x+c.width-2.5 : align==='center' ? x+c.width/2 : x+2.5;
-        pdf.text(cellLines[ci], tx, ctx.y+padV+3.0, {align});
-      }
-      x += c.width;
-    });
-
-    pdf.setDrawColor(215,222,215);
-    pdf.setLineWidth(0.15);
-    pdf.line(PDF_MARGIN, ctx.y+rowH, PDF_MARGIN+contentW, ctx.y+rowH);
-    ctx.y += rowH;
-  });
-
-  ctx.y += 5; // jarak setelah tabel
-}
-
-// Grid foto dengan pagination per-baris grid: kalau satu baris foto (mis. 3 kolom)
-// tidak muat lagi di sisa halaman, seluruh baris itu (bukan satu foto terpotong)
-// dipindah ke halaman baru.
-async function pdfDrawPhotoGrid(pdf, ctx, items, opts){
-  const columns = opts.columns || 3;
-  const gap = 5;
-  const contentW = ctx.pageW - PDF_MARGIN*2;
-  const cellW = (contentW - gap*(columns-1)) / columns;
-  const imgH = 40;
-  const cellH = imgH + 15;
-
-  for(let i=0;i<items.length;i+=columns){
-    const rowItems = items.slice(i, i+columns);
-    if(ctx.y + cellH > ctx.pageH - PDF_MARGIN){
-      pdf.addPage();
-      ctx.y = PDF_MARGIN;
-    }
-    let x = PDF_MARGIN;
-    for(const it of rowItems){
-      pdf.setDrawColor(215,222,215);
-      pdf.setLineWidth(0.2);
-      pdf.roundedRect(x, ctx.y, cellW, cellH, 1.5, 1.5);
-
-      const photo = opts.getPhoto(it);
-      if(photo){
-        try{
-          const size = await loadImageSize(photo);
-          let iw = cellW-6, ih = imgH-4;
-          if(size && size.width && size.height){
-            const ratio = size.width/size.height;
-            ih = iw/ratio;
-            if(ih > imgH-4){ ih = imgH-4; iw = ih*ratio; }
-          }
-          const ix = x + (cellW-iw)/2;
-          const iy = ctx.y + 2 + ((imgH-4)-ih)/2;
-          pdf.addImage(photo, imgFormatFromDataUri(photo), ix, iy, iw, ih);
-        }catch(e){}
-      }
-      pdf.setFont(undefined,'bold');
-      pdf.setFontSize(8.2);
-      pdf.setTextColor(30,42,34);
-      const cap1 = pdf.splitTextToSize(opts.getCaption1(it), cellW-6).slice(0,2);
-      pdf.text(cap1, x+3, ctx.y+imgH+5);
-      pdf.setFont(undefined,'normal');
-      pdf.setFontSize(7.4);
-      pdf.setTextColor(91,107,95);
-      const cap2 = pdf.splitTextToSize(opts.getCaption2(it), cellW-6).slice(0,1);
-      pdf.text(cap2, x+3, ctx.y+imgH+5+cap1.length*3.5);
-
-      x += cellW + gap;
-    }
-    ctx.y += cellH + gap;
-  }
-}
-
-// Setiap nota pembelian mendapat 1 halaman penuh sendiri, foto ditampilkan
-// sebesar mungkin (bukan thumbnail kecil di grid) supaya tulisan pada
-// nota tetap bisa dibaca.
-async function pdfAddNotaFullPages(pdf, ctx){
-  const notas = (STATE.notaPembelian || [])
-    .filter(n => n && n.photo)
-    .slice()
-    .sort((a,b)=> (a.date||'').localeCompare(b.date||''));
-  if(!notas.length) return;
-
-  for(const n of notas){
-    pdf.addPage();
-    ctx.y = PDF_MARGIN;
-
-    pdf.setFont(undefined,'bold');
-    pdf.setFontSize(13.5);
-    pdf.setTextColor(31,78,54); // --green-deep
-    pdf.text('Lampiran: Foto Nota Pembelian', PDF_MARGIN, ctx.y+2);
-    ctx.y += 5.5;
-    pdf.setDrawColor(47,111,78);
-    pdf.setLineWidth(0.6);
-    pdf.line(PDF_MARGIN, ctx.y, ctx.pageW-PDF_MARGIN, ctx.y);
-    ctx.y += 8;
-
-    pdf.setFont(undefined,'normal');
-    pdf.setFontSize(10.5);
-    pdf.setTextColor(30,42,34); // --ink
-    pdf.text(fmtDate(n.date), PDF_MARGIN, ctx.y);
-    ctx.y += 6;
-
-    if(n.note){
-      pdf.setFontSize(9.5);
-      pdf.setTextColor(91,107,95); // --ink-soft
-      const noteLines = pdf.splitTextToSize(n.note, ctx.pageW - PDF_MARGIN*2);
-      pdf.text(noteLines, PDF_MARGIN, ctx.y);
-      ctx.y += noteLines.length * 4.5 + 4;
-    }
-
-    const availW = ctx.pageW - PDF_MARGIN*2;
-    const availH = ctx.pageH - ctx.y - PDF_MARGIN;
-    let drawW = availW, drawH = availH;
-
-    const size = await loadImageSize(n.photo);
-    if(size && size.width && size.height){
-      const ratio = size.width / size.height;
-      drawH = drawW / ratio;
-      if(drawH > availH){ drawH = availH; drawW = drawH * ratio; }
-    }
-    const x = PDF_MARGIN + (availW - drawW) / 2;
-    const y = ctx.y + (availH - drawH) / 2;
-    try{
-      pdf.addImage(n.photo, imgFormatFromDataUri(n.photo), x, y, drawW, drawH);
-    }catch(e){
-      pdf.setFontSize(10);
-      pdf.setTextColor(200,60,60);
-      pdf.text('(Gagal memuat foto nota ini)', PDF_MARGIN, ctx.y + 10);
-    }
-  }
-}
-
 async function buildReportPdf(){
   const { jsPDF } = window.jspdf;
   const pdf = new jsPDF('p','mm','a4');
-  const ctx = { y: PDF_MARGIN, pageW: pdf.internal.pageSize.getWidth(), pageH: pdf.internal.pageSize.getHeight() };
+  const pageW = pdf.internal.pageSize.getWidth();
+  const pageH = pdf.internal.pageSize.getHeight();
+  let firstPage = true;
 
-  // ---- Judul laporan ----
-  pdf.setFont(undefined,'bold');
-  pdf.setFontSize(17);
-  pdf.setTextColor(31,78,54);
-  pdf.text('Laporan Stok Operasional', PDF_MARGIN, ctx.y+4);
-  pdf.setFont(undefined,'normal');
-  pdf.setFontSize(12);
-  pdf.setTextColor(91,107,95);
-  pdf.text('Cabang Campang Raya', PDF_MARGIN, ctx.y+11);
-  pdf.setFontSize(9.5);
-  pdf.text('Periode '+fmtDate(STATE.periodStart)+' – '+fmtDate(STATE.periodEnd), PDF_MARGIN, ctx.y+17);
-  ctx.y += 25;
-
-  // ---- Laporan & Forecast ----
-  const rows = computeForecastRows();
-  pdfSectionTitle(pdf, ctx, 'Laporan & Forecast Kebutuhan Bulan Depan', document.getElementById('forecastMeta').textContent || '', 20);
-  const forecastColumns = [
-    {label:'Barang', width:42, value:r=>r.name},
-    {label:'Awal', width:13, align:'right', value:r=>r.awal},
-    {label:'Akhir', width:13, align:'right', value:r=>r.akhir},
-    {label:'Pakai/Hari', width:17, align:'right', value:r=> r.rate!=null? r.rate.toFixed(2): '-'},
-    {label:'Sisa Hari', width:15, align:'right', value:r=> r.daysLeft!=null? String(r.daysLeft):'-'},
-    {label:'Perkiraan Habis', width:23, value:r=> r.emptyDate? fmtDate(r.emptyDate):'-'},
-    {label:'Saran Beli', width:20, align:'right', value:r=> r.reorder+' '+r.unit},
-    {label:'Status', width:43, align:'center', value:()=> '', badge:r=>pdfStatusStyle(r.status)}
-  ];
-  pdfDrawTable(pdf, ctx, forecastColumns, rows, {continuedTitle:'Laporan & Forecast Kebutuhan Bulan Depan (lanjutan)'});
-
-  // ---- Tanda tangan ----
-  const sigImgH = 20;
-  const gapCols = 10;
-  const colW = (ctx.pageW - PDF_MARGIN*2 - gapCols)/2;
-  const sigBlockH = 4 + sigImgH + 8;
-  if(ctx.y + sigBlockH > ctx.pageH - PDF_MARGIN){ pdf.addPage(); ctx.y = PDF_MARGIN; }
-  pdf.setFont(undefined,'bold'); pdf.setFontSize(9.5); pdf.setTextColor(91,107,95);
-  pdf.text('Pemeriksa Mingguan Terakhir', PDF_MARGIN, ctx.y);
-  pdf.text('Pemeriksa Bulanan', PDF_MARGIN+colW+gapCols, ctx.y);
-  ctx.y += 4;
-  pdf.setDrawColor(215,222,215); pdf.setLineWidth(0.2);
-  pdf.rect(PDF_MARGIN, ctx.y, colW, sigImgH);
-  pdf.rect(PDF_MARGIN+colW+gapCols, ctx.y, colW, sigImgH);
-  const lastWeek = STATE.weeks.length ? STATE.weeks.slice().sort((a,b)=>a.week-b.week)[STATE.weeks.length-1] : null;
-  if(lastWeek && lastWeek.sig){
-    try{ pdf.addImage(lastWeek.sig, imgFormatFromDataUri(lastWeek.sig), PDF_MARGIN+2, ctx.y+2, colW-4, sigImgH-4); }catch(e){}
-  }
-  if(STATE.sigMonthly){
-    try{ pdf.addImage(STATE.sigMonthly, imgFormatFromDataUri(STATE.sigMonthly), PDF_MARGIN+colW+gapCols+2, ctx.y+2, colW-4, sigImgH-4); }catch(e){}
-  }
-  ctx.y += sigImgH + 4;
-  pdf.setFont(undefined,'normal'); pdf.setFontSize(9); pdf.setTextColor(30,42,34);
-  pdf.text(lastWeek ? (lastWeek.inspector||'-')+' · Minggu '+lastWeek.week : '-', PDF_MARGIN, ctx.y);
-  pdf.text(STATE.akhirInspector || '-', PDF_MARGIN+colW+gapCols, ctx.y);
-  ctx.y += 10;
-
-  // ---- Kondisi Stok Akhir: rencana pembelian (selalu di halaman baru sendiri) ----
-  const needed = rows.filter(r=> r.status==='habis' || r.status==='segera');
-  if(needed.length){
-    pdf.addPage(); ctx.y = PDF_MARGIN;
-    pdfSectionTitle(pdf, ctx, 'Kondisi Stok Akhir', 'Rencana Pembelian Barang Periode Bulan Berikutnya', 20);
-    const purchaseColumns = [
-      {label:'Barang', width:70, value:r=>r.name},
-      {label:'Stok Akhir', width:30, align:'right', value:r=> r.akhir+' '+r.unit},
-      {label:'Jumlah Pembelian', width:40, align:'right', value:r=> r.reorder+' '+r.unit},
-      {label:'Status', width:46, align:'center', value:()=>'', badge:r=>pdfStatusStyle(r.status)}
-    ];
-    pdfDrawTable(pdf, ctx, purchaseColumns, needed, {continuedTitle:'Kondisi Stok Akhir (lanjutan)'});
+  async function addSectionPages(el){
+    if(!el) return;
+    await waitForImages(el);
+    const canvas = await html2canvas(el, {scale:2, backgroundColor:'#ffffff'});
+    const imgData = canvas.toDataURL('image/jpeg', 0.92);
+    const imgH = canvas.height * pageW / canvas.width;
+    let heightLeft = imgH, position = 0;
+    if(!firstPage) pdf.addPage();
+    firstPage = false;
+    pdf.addImage(imgData,'JPEG',0,position,pageW,imgH);
+    heightLeft -= pageH;
+    while(heightLeft > 0){
+      position = heightLeft - imgH;
+      pdf.addPage();
+      pdf.addImage(imgData,'JPEG',0,position,pageW,imgH);
+      heightLeft -= pageH;
+    }
   }
 
-  // ---- Lampiran: Kondisi Stok Akhir (foto) ----
-  const akhirItems = STATE.items.filter(it => STATE.akhir[it.id] && STATE.akhir[it.id].photo);
-  if(akhirItems.length){
-    pdf.addPage(); ctx.y = PDF_MARGIN;
-    pdfSectionTitle(pdf, ctx, 'Lampiran: Kondisi Stok Akhir');
-    await pdfDrawPhotoGrid(pdf, ctx, akhirItems, {
-      columns: 3,
-      getPhoto: it => STATE.akhir[it.id].photo,
-      getCaption1: it => it.name,
-      getCaption2: it => (STATE.akhir[it.id].qty!=null?STATE.akhir[it.id].qty:'-')+' '+it.unit+' · '+it.category
-    });
+  // Setiap nota pembelian mendapat 1 halaman penuh, foto ditampilkan
+  // sebesar mungkin (bukan thumbnail kecil di grid) supaya tulisan pada
+  // nota tetap bisa dibaca.
+  async function addNotaFullPages(){
+    const notas = (STATE.notaPembelian || [])
+      .filter(n => n && n.photo)
+      .slice()
+      .sort((a,b)=> (a.date||'').localeCompare(b.date||''));
+    if(!notas.length) return;
+
+    const margin = 14;
+    for(const n of notas){
+      if(!firstPage) pdf.addPage();
+      firstPage = false;
+
+      pdf.setFont(undefined,'bold');
+      pdf.setFontSize(13);
+      pdf.setTextColor(31,78,54); // --green-deep
+      pdf.text('Lampiran: Foto Nota Pembelian', margin, 14);
+
+      pdf.setFont(undefined,'normal');
+      pdf.setFontSize(10.5);
+      pdf.setTextColor(30,42,34); // --ink
+      pdf.text(fmtDate(n.date), margin, 21);
+
+      let topY = 26;
+      if(n.note){
+        pdf.setFontSize(9.5);
+        pdf.setTextColor(91,107,95); // --ink-soft
+        const noteLines = pdf.splitTextToSize(n.note, pageW - margin*2);
+        pdf.text(noteLines, margin, topY);
+        topY += noteLines.length * 4.5 + 3;
+      }
+
+      const availW = pageW - margin*2;
+      const availH = pageH - topY - margin;
+      let drawW = availW, drawH = availH;
+
+      const size = await loadImageSize(n.photo);
+      if(size && size.width && size.height){
+        const ratio = size.width / size.height;
+        drawH = drawW / ratio;
+        if(drawH > availH){ drawH = availH; drawW = drawH * ratio; }
+      }
+      const x = margin + (availW - drawW) / 2;
+      const y = topY + (availH - drawH) / 2;
+      try{
+        pdf.addImage(n.photo, imgFormatFromDataUri(n.photo), x, y, drawW, drawH);
+      }catch(e){
+        pdf.setFontSize(10);
+        pdf.setTextColor(200,60,60);
+        pdf.text('(Gagal memuat foto nota ini)', margin, topY + 10);
+      }
+    }
   }
 
-  // ---- Lampiran: Foto Nota Pembelian ----
-  await pdfAddNotaFullPages(pdf, ctx);
+  await addSectionPages(document.getElementById('pdfArea'));
+  const purchaseCard = document.getElementById('pdfPurchaseNeeds');
+  if(purchaseCard.style.display !== 'none') await addSectionPages(purchaseCard);
+  const akhirCard = document.getElementById('pdfAkhirPhotos');
+  if(akhirCard.style.display !== 'none') await addSectionPages(akhirCard);
+  await addNotaFullPages();
 
   return pdf;
 }
