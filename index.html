@@ -252,7 +252,7 @@
     <div class="card">
       <h2>Pencatatan Stok Awal</h2>
       <p class="hint">Diisi di awal periode (sekitar tanggal 11), setelah barang belanjaan diterima. Sertakan foto kondisi stok tiap barang sebagai bukti awal.</p>
-      <div class="field"><label>Tanggal pencatatan</label><input type="date" id="awalDate"></div>
+      <div class="hint" id="awalDateHint" style="margin-bottom:12px;"></div>
       <div class="group-tabs" data-group-for="awal">
         <button data-group="branch" class="active">Belanja Bulanan Branch</button>
         <button data-group="netop">Belanja Bulanan Netop</button>
@@ -316,7 +316,7 @@
     <div class="card">
       <h2>Stok Akhir Bulan (Tanggal 10)</h2>
       <p class="hint">Diisi di akhir periode, sebelum belanja bulan berikutnya. Sertakan foto kondisi stok akhir tiap barang — data ini menjadi dasar forecast dan rencana pembelian bulan depan.</p>
-      <div class="field"><label>Tanggal pencatatan</label><input type="date" id="akhirDate"></div>
+      <div class="hint" id="akhirDateHint" style="margin-bottom:12px;"></div>
       <div class="group-tabs" data-group-for="akhir">
         <button data-group="branch" class="active">Belanja Bulanan Branch</button>
         <button data-group="netop">Belanja Bulanan Netop</button>
@@ -594,8 +594,11 @@ function applyPeriodFromId(pid){
   document.getElementById('periodRangeHint').textContent =
     "Rentang tanggal: "+fmtDate(start)+" – "+fmtDate(end);
   refreshPeriodPill();
-  document.getElementById('awalDate').value = STATE.periodStart;
-  document.getElementById('akhirDate').value = STATE.periodEnd;
+  // Tanggal pencatatan stok awal/akhir TIDAK lagi diisi manual — otomatis mengikuti
+  // tanggal mulai/akhir periode yang dipilih di "Pilih Periode", supaya data (jumlah
+  // maupun foto) yang tersimpan selalu konsisten dengan periode yang sedang aktif.
+  document.getElementById('awalDateHint').textContent = "Tanggal pencatatan mengikuti periode: "+fmtDate(STATE.periodStart);
+  document.getElementById('akhirDateHint').textContent = "Tanggal pencatatan mengikuti periode: "+fmtDate(STATE.periodEnd);
   document.getElementById('weekDate').value = todayIso();
 }
 async function loadPeriod(pid){
@@ -1079,7 +1082,7 @@ function clearDirtyMap(dirtyMap){
 async function doSaveAwal(){
   if(!STATE.periodId) return;
   STATE.awalInspector = document.getElementById('awalInspector').value.trim();
-  const date = document.getElementById('awalDate').value || STATE.periodStart;
+  const date = STATE.periodStart; // selalu ikut tanggal mulai periode, tidak lagi input manual
   const values = pickValuesToSend(STATE.awal, STATE.dirtyAwal);
   await api('saveEntry', {periodId: STATE.periodId, type:'awal', date, inspector: STATE.awalInspector, values});
   clearDirtyMap(STATE.dirtyAwal);
@@ -1102,7 +1105,7 @@ async function doSaveAkhir(){
   if(!STATE.periodId) return;
   STATE.akhirInspector = document.getElementById('akhirInspector').value.trim();
   STATE.sigMonthly = sigCanvases.sigMonthly.toDataURL('image/png');
-  const date = document.getElementById('akhirDate').value || STATE.periodEnd;
+  const date = STATE.periodEnd; // selalu ikut tanggal akhir periode, tidak lagi input manual
   const values = pickValuesToSend(STATE.akhir, STATE.dirtyAkhir);
   await api('saveEntry', {periodId: STATE.periodId, type:'akhir', date, inspector: STATE.akhirInspector, values, signature: STATE.sigMonthly});
   clearDirtyMap(STATE.dirtyAkhir);
@@ -1281,7 +1284,7 @@ function computeForecastRows(){
   STATE.items.forEach(it=>{
     const points = [];
     if(STATE.awal[it.id] && STATE.awal[it.id].qty!=null){
-      points.push({date: new Date(document.getElementById('awalDate').value||STATE.periodStart), qty: Number(STATE.awal[it.id].qty)});
+      points.push({date: new Date(STATE.periodStart), qty: Number(STATE.awal[it.id].qty)});
     }
     STATE.weeks.forEach(w=>{
       if(w.values[it.id] && w.values[it.id].qty!=null){
@@ -1289,7 +1292,7 @@ function computeForecastRows(){
       }
     });
     if(STATE.akhir[it.id] && STATE.akhir[it.id].qty!=null){
-      points.push({date: new Date(document.getElementById('akhirDate').value||STATE.periodEnd), qty: Number(STATE.akhir[it.id].qty)});
+      points.push({date: new Date(STATE.periodEnd), qty: Number(STATE.akhir[it.id].qty)});
     }
     points.sort((a,b)=>a.date-b.date);
 
@@ -1870,7 +1873,10 @@ async function init(){
   document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='hidden') flushAutosaves(); });
   window.addEventListener('pagehide', flushAutosaves);
 
-  if(CFG.scriptUrl){ pullPeriodData(); }
+  // Ditunggu (await) supaya form terisi dengan data server sesegera mungkin sebelum
+  // pengguna sempat mengetik — mengurangi jendela waktu di mana STATE.awal/akhir belum
+  // lengkap (lihat catatan di upsertEntryRows pada code.gs untuk perlindungan utamanya).
+  if(CFG.scriptUrl){ await pullPeriodData(); }
 }
 init();
 
