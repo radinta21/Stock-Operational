@@ -186,9 +186,34 @@
   .photo-grid .pg-item .pg-meta{font-size:11px; color:var(--ink-soft); margin-top:2px;}
   .pg-photo-wrap{position:relative;}
   .pg-photo-wrap .dl-btn{position:absolute; top:6px; right:6px; background:rgba(255,255,255,.92);}
-  /* Kondisi Stok Akhir: foto sedikit lebih besar dari grid default */
-  #akhirPhotoGrid{grid-template-columns:repeat(auto-fill,minmax(210px,1fr));}
-  #akhirPhotoGrid .pg-item img{height:190px;}
+  /* Lampiran perbandingan Stok Awal vs Stok Akhir (pratinjau di layar) */
+  .cmp-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:12px; margin-top:10px;}
+  .cmp-item{border:1px solid var(--line); border-radius:4px; padding:8px; background:#FCFDFC;}
+  .cmp-pair{display:flex; gap:6px;}
+  .cmp-half{flex:1; min-width:0; text-align:center;}
+  .cmp-photo-wrap{position:relative;}
+  .cmp-half img{width:100%; height:110px; object-fit:cover; border-radius:3px; border:1px solid var(--line); display:block;}
+  .cmp-half .photo-placeholder{width:100%; height:110px;}
+  .cmp-photo-wrap .dl-btn{position:absolute; top:5px; right:5px; background:rgba(255,255,255,.92); padding:4px;}
+  .cmp-half .cmp-lbl{font-size:10.5px; font-weight:700; color:var(--ink-soft); margin-top:4px; letter-spacing:.2px;}
+  .cmp-name{font-size:12.5px; font-weight:600; margin-top:7px; line-height:1.3;}
+  .cmp-meta{font-size:11px; color:var(--ink-soft); margin-top:2px;}
+  .cmp-delta{font-size:11px; font-weight:600; margin-top:3px;}
+
+  /* Checklist Pembelian */
+  .cl-summary{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px;}
+  .cl-stat{flex:1; min-width:110px; border:1px solid var(--line); border-radius:4px; padding:10px; background:#FCFDFC;}
+  .cl-stat .n{font-family:'Roboto Mono',monospace; font-size:19px; font-weight:700; color:var(--green-deep); line-height:1.2;}
+  .cl-stat .l{font-size:11px; color:var(--ink-soft); margin-top:2px;}
+  .cl-line.done{background:var(--ok-bg); border-color:var(--ok-fg);}
+  .cl-grid{display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end;}
+  .cl-check{display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600; flex:0 0 auto;}
+  .cl-check input{width:19px; height:19px; flex:0 0 auto;}
+  .cl-target{font-size:12.5px; color:var(--ink-soft); flex:0 0 auto;}
+  .cl-target b{color:var(--ink); font-family:'Roboto Mono',monospace;}
+  .cl-qty{margin:0; flex:0 0 130px;}
+  .cl-qty label{font-size:11px;}
+  .cl-note{font-size:12px; font-weight:600; flex:0 0 auto; padding-bottom:9px;}
 
   .nota-line{border:1px solid var(--line); border-radius:4px; padding:12px; margin-bottom:10px; background:#FCFDFC;}
 
@@ -230,11 +255,124 @@
   @media print{
     header.top, nav.tabs, .btn-row, .no-print{display:none !important;}
   }
+
+  /* ================= LOGIN / AKUN ================= */
+  #authGate{
+    position:fixed; inset:0; z-index:500;
+    background:linear-gradient(165deg,#1F4E36 0%,#12301F 100%);
+    display:flex; align-items:flex-start; justify-content:center;
+    padding:32px 14px; overflow-y:auto;
+  }
+  #authGate.hidden{display:none;}
+  .auth-box{
+    background:#fff; border-radius:6px; width:100%; max-width:400px;
+    padding:24px 20px 20px; box-shadow:0 18px 44px rgba(0,0,0,.34);
+  }
+  .auth-brand{text-align:center; margin-bottom:20px; padding-bottom:16px; border-bottom:1px solid var(--line);}
+  .auth-brand h1{font-size:19px;}
+  .auth-brand .auth-sub{font-size:12.5px; color:var(--ink-soft); margin-top:4px;}
+  .auth-title{font-size:15px; margin-bottom:4px;}
+  .auth-box .btn{width:100%; justify-content:center; margin-top:4px;}
+  .auth-msg{font-size:12.5px; margin-top:10px; min-height:16px; line-height:1.5;}
+  .auth-msg.err{color:var(--rust); font-weight:600;}
+  .auth-msg.ok{color:var(--green); font-weight:600;}
+  .auth-msg.busy{color:var(--amber);}
+  .auth-foot{font-size:11.5px; color:var(--ink-soft); line-height:1.55; margin-top:14px; padding-top:12px; border-top:1px solid var(--line);}
+  .pw-wrap{position:relative;}
+  .pw-wrap input{padding-right:62px;}
+  .pw-toggle{
+    position:absolute; right:4px; top:50%; transform:translateY(-50%);
+    background:none; border:none; color:var(--green); font-size:12px; font-weight:600; padding:6px 8px;
+  }
+  .pw-rules{font-size:11.5px; color:var(--ink-soft); line-height:1.5; margin:-4px 0 12px;}
+
+  header.top .user-bar{
+    display:flex; justify-content:space-between; align-items:center; gap:10px;
+    margin-top:12px; padding-top:10px; border-top:1px solid rgba(255,255,255,.16);
+    font-size:12.5px; color:#C9DACB;
+  }
+  header.top .user-bar .ub-who{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  header.top .user-bar .ub-who b{color:#fff; font-weight:600;}
+  header.top .user-bar button{
+    background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.28);
+    color:#F2F6F1; border-radius:3px; padding:5px 11px; font-size:12px; font-weight:600; white-space:nowrap;
+  }
+  header.top .user-bar button:hover{background:rgba(255,255,255,.22);}
+
+  .user-row{border:1px solid var(--line); border-radius:4px; padding:12px; margin-bottom:10px;}
+  .user-row .ur-top{display:flex; justify-content:space-between; gap:8px; align-items:flex-start; margin-bottom:8px;}
+  .user-row .ur-email{font-size:13.5px; font-weight:600; word-break:break-all; color:var(--green-deep);}
+  .user-row .ur-meta{font-size:11.5px; color:var(--ink-soft); margin-top:2px;}
+  .user-row .ur-grid{display:flex; gap:8px; flex-wrap:wrap;}
+  .user-row .ur-grid > *{flex:1; min-width:150px;}
+  .user-row .btn{padding:7px 11px; font-size:12px;}
+
   #pdfArea{background:#fff;}
   #pdfArea h2{border-bottom:2px solid var(--green); padding-bottom:6px;}
 </style>
 </head>
 <body>
+
+<!-- ================= GERBANG LOGIN ================= -->
+<!-- Seluruh aplikasi disembunyikan di balik overlay ini sampai login berhasil. Ini hanya
+     lapisan tampilan: server tetap menolak semua permintaan tanpa token yang sah. -->
+<div id="authGate">
+  <div class="auth-box">
+    <div class="auth-brand">
+      <h1>Stok Barang Operasional</h1>
+      <div class="auth-sub">Cabang Campang Raya</div>
+    </div>
+
+    <!-- Tampilan 1: form login -->
+    <div id="authLoginView">
+      <div class="field">
+        <label>Email kantor</label>
+        <input type="text" id="loginEmail" inputmode="email" autocomplete="username" spellcheck="false" placeholder="nama@biznetnetworks.com">
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <div class="pw-wrap">
+          <input type="password" id="loginPassword" autocomplete="current-password" placeholder="Masukkan password">
+          <button type="button" class="pw-toggle" data-pw="loginPassword">Lihat</button>
+        </div>
+      </div>
+      <button class="btn" id="btnLogin">Masuk</button>
+      <div class="auth-msg" id="loginMsg"></div>
+      <div class="auth-foot">Akun dibuatkan oleh Owner. Setelah 8 kali percobaan gagal, akun terkunci sementara selama 15 menit.</div>
+    </div>
+
+    <!-- Tampilan 2: wajib ganti password saat login pertama / setelah direset Owner -->
+    <div id="authChangeView" style="display:none;">
+      <h2 class="auth-title">Ganti Password</h2>
+      <p class="hint" style="margin-bottom:14px;">Password Anda masih password sementara. Demi keamanan, buat password baru milik Anda sendiri sebelum melanjutkan.</p>
+      <div class="field">
+        <label>Password saat ini</label>
+        <div class="pw-wrap">
+          <input type="password" id="cpOld" autocomplete="current-password">
+          <button type="button" class="pw-toggle" data-pw="cpOld">Lihat</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Password baru</label>
+        <div class="pw-wrap">
+          <input type="password" id="cpNew" autocomplete="new-password">
+          <button type="button" class="pw-toggle" data-pw="cpNew">Lihat</button>
+        </div>
+      </div>
+      <div class="pw-rules">Minimal 8 karakter, harus mengandung huruf dan angka.</div>
+      <div class="field">
+        <label>Ulangi password baru</label>
+        <div class="pw-wrap">
+          <input type="password" id="cpConfirm" autocomplete="new-password">
+          <button type="button" class="pw-toggle" data-pw="cpConfirm">Lihat</button>
+        </div>
+      </div>
+      <button class="btn" id="btnCpSave">Simpan &amp; Masuk</button>
+      <div class="auth-msg" id="cpMsg"></div>
+      <div class="auth-foot"><a href="#" id="cpCancel">Keluar dan login dengan akun lain</a></div>
+    </div>
+  </div>
+</div>
 
 <header class="top">
   <div class="brand">
@@ -244,6 +382,10 @@
     </div>
     <div class="period-pill" id="periodPill">–</div>
   </div>
+  <div class="user-bar" id="userBar" style="display:none;">
+    <div class="ub-who"><b id="ubName"></b> · <span id="ubRole"></span></div>
+    <button id="btnLogout">Keluar</button>
+  </div>
 </header>
 
 <nav class="tabs" id="tabs">
@@ -251,10 +393,11 @@
   <button data-tab="items">Master Barang</button>
   <button data-tab="awal">Stok Awal</button>
   <button data-tab="nota">Nota Pembelian</button>
-  <button data-tab="mingguan">Cek Mingguan</button>
   <button data-tab="akhir">Stok Akhir</button>
+  <button data-tab="checklist">Checklist Pembelian</button>
   <button data-tab="forecast">Forecast &amp; Laporan</button>
   <button data-tab="riwayat">Riwayat Periode</button>
+  <button data-tab="akun">Akun</button>
 </nav>
 
 <main>
@@ -287,7 +430,7 @@
     </div>
     <div class="card">
       <h2>Penyimpanan Data</h2>
-      <p class="hint">Semua isian — stok awal, stok akhir, nota pembelian, cek mingguan, dan foto — otomatis tersimpan ke spreadsheet server beberapa saat setelah diisi, tanpa perlu menekan tombol Simpan. Data tidak akan hilang saat refresh atau dibuka dari HP/perangkat lain, selama koneksi internet tersambung. Status sinkron ditampilkan di bawah tiap form.</p>
+      <p class="hint">Semua isian — stok awal, stok akhir, nota pembelian, checklist pembelian, dan foto — otomatis tersimpan ke spreadsheet server beberapa saat setelah diisi, tanpa perlu menekan tombol Simpan. Data tidak akan hilang saat refresh atau dibuka dari HP/perangkat lain, selama koneksi internet tersambung. Status sinkron ditampilkan di bawah tiap form.</p>
     </div>
   </section>
 
@@ -348,42 +491,6 @@
     </div>
   </section>
 
-  <!-- ================= MINGGUAN ================= -->
-  <section class="panel" id="panel-mingguan">
-    <div class="card lockable-form">
-      <h2>Cek Stok Mingguan</h2>
-      <p class="hint">Lakukan pengecekan sisa stok tiap minggu selama periode berjalan, untuk memantau kecepatan pemakaian. Foto tidak wajib pada cek mingguan.</p>
-      <div class="locked-notice" id="lockedNotice-mingguan" style="display:none;">🔒 Periode ini bukan periode berjalan &amp; sudah otomatis terkunci — cek mingguan tidak bisa diubah lagi.</div>
-      <div class="row">
-        <div class="field"><label>Minggu ke-</label><input type="number" id="weekNumber" min="1" value="1"></div>
-        <div class="field"><label>Tanggal cek</label><input type="date" id="weekDate"></div>
-      </div>
-      <div class="field search-field">
-        <label>Cari barang</label>
-        <input type="text" id="mingguanSearch" placeholder="Ketik nama barang...">
-      </div>
-      <div class="group-tabs" data-group-for="mingguan">
-        <button data-group="branch" class="active">Belanja Bulanan Branch</button>
-        <button data-group="netop">Belanja Bulanan Netop</button>
-      </div>
-      <div id="mingguanList"></div>
-      <div class="field"><label>Nama pemeriksa mingguan</label><input type="text" id="weekInspector"></div>
-      <div class="field">
-        <label>Tanda tangan pemeriksa mingguan</label>
-        <div class="sig-wrap"><canvas class="sig" id="sigWeekly"></canvas></div>
-        <div class="btn-row"><button class="btn ghost" data-clear="sigWeekly">Hapus Tanda Tangan</button></div>
-      </div>
-      <div class="btn-row">
-        <button class="btn" id="btnSaveWeek">Simpan Cek Mingguan</button>
-      </div>
-      <div class="sync-status" id="mingguanSyncStatus"></div>
-    </div>
-    <div class="card">
-      <h3>Riwayat Cek Mingguan Periode Ini</h3>
-      <div id="weekHistory" class="empty">Belum ada data.</div>
-    </div>
-  </section>
-
   <!-- ================= AKHIR ================= -->
   <section class="panel" id="panel-akhir">
     <div class="card lockable-form">
@@ -413,11 +520,40 @@
     </div>
   </section>
 
+  <!-- ================= CHECKLIST PEMBELIAN ================= -->
+  <section class="panel" id="panel-checklist">
+    <div class="card" id="checklistCard">
+      <h2>Checklist Pembelian Periode Berikutnya</h2>
+      <p class="hint">Daftar belanja untuk periode berikutnya, disusun otomatis dari barang yang berstatus <b>Stock Habis</b> atau <b>Segera Habis</b> pada stok akhir periode ini. Centang tiap barang yang sudah dibeli, lalu isi jumlah yang benar-benar dibeli — keterangan Pas / Lebih / Kurang terisi otomatis.</p>
+      <div class="locked-notice" id="lockedNotice-checklist" style="display:none;">🔒 Checklist periode ini sudah terkunci. Checklist hanya bisa diisi selama periode berjalan dan selama masa belanja di periode berikutnya.</div>
+      <div class="hint" id="checklistPeriodHint" style="margin-bottom:12px;"></div>
+      <div id="checklistSummary" class="cl-summary"></div>
+      <div class="field search-field">
+        <label>Cari barang</label>
+        <input type="text" id="checklistSearch" placeholder="Ketik nama barang...">
+      </div>
+      <div id="checklistList"></div>
+      <div class="field"><label>Nama petugas belanja</label><input type="text" id="checklistBuyer" placeholder="Nama yang melakukan pembelian"></div>
+      <div class="btn-row">
+        <button class="btn" id="btnSaveChecklist">Simpan Checklist</button>
+        <button class="btn secondary keep-enabled" id="btnExportChecklistPdf">Export Checklist ke PDF</button>
+      </div>
+      <div class="sync-status" id="checklistSyncStatus"></div>
+    </div>
+    <div class="card no-print">
+      <h3>Checklist Periode Lain</h3>
+      <p class="hint">Barang di checklist ini dihitung dari stok akhir periode yang sedang dimuat, dan biasanya baru dibelanjakan pada awal periode berikutnya. Gunakan tombol di bawah bila ingin membuka checklist belanja yang dibuat dari periode sebelumnya.</p>
+      <div class="btn-row">
+        <button class="btn secondary" id="btnChecklistPrevPeriod">Buka Checklist Periode Sebelumnya</button>
+      </div>
+    </div>
+  </section>
+
   <!-- ================= FORECAST ================= -->
   <section class="panel" id="panel-forecast">
     <div class="card" id="pdfArea">
       <h2>Laporan &amp; Forecast Kebutuhan Bulan Depan</h2>
-      <p class="hint">Ringkasan pemakaian, dan Berapa hari lagi stok tiap barang diperkirakan habis, dihitung dari stok awal, cek mingguan, dan stok akhir periode ini.</p>
+      <p class="hint">Ringkasan pemakaian, dan Berapa hari lagi stok tiap barang diperkirakan habis, dihitung dari stok awal dan stok akhir periode ini.</p>
       <div id="forecastMeta" class="hint"></div>
       <div style="overflow-x:auto;">
         <table id="forecastTable">
@@ -428,10 +564,7 @@
         </table>
       </div>
       <div id="signOffArea" style="margin-top:16px;">
-        <div class="row">
-          <div><div class="hint">Pemeriksa Mingguan Terakhir</div><div id="sigWeeklyPreviewWrap"></div></div>
-          <div><div class="hint">Pemeriksa Bulanan</div><div id="sigMonthlyPreviewWrap"></div></div>
-        </div>
+        <div><div class="hint">Pemeriksa Bulanan</div><div id="sigMonthlyPreviewWrap"></div></div>
       </div>
     </div>
 
@@ -448,10 +581,10 @@
       </div>
     </div>
 
-    <div class="card" id="pdfAkhirPhotos" style="display:none;">
-      <h2>Lampiran: Kondisi Stok Akhir</h2>
-      <p class="hint">Foto kondisi stok akhir tiap barang beserta namanya, dilampirkan sebagai halaman tambahan pada laporan.</p>
-      <div id="akhirPhotoGrid" class="photo-grid"></div>
+    <div class="card" id="pdfCmpPhotos" style="display:none;">
+      <h2>Lampiran Stock: Perbandingan Stok Awal &amp; Stok Akhir</h2>
+      <p class="hint">Foto tiap barang saat stok awal (kiri) dibandingkan dengan kondisinya saat stok akhir (kanan). Pada file PDF, lampiran ini disusun 12 perbandingan barang per halaman.</p>
+      <div id="cmpPhotoGrid" class="cmp-grid"></div>
     </div>
 
     <div class="card" id="pdfNotaPhotos" style="display:none;">
@@ -476,6 +609,66 @@
       <p class="hint">Daftar periode yang sudah tercatat di spreadsheet. Pilih untuk memuat sebagai periode aktif (misalnya untuk melihat kembali atau melengkapi data).</p>
       <div id="periodListArea" class="empty">Memuat...</div>
       <div class="btn-row"><button class="btn secondary" id="btnRefreshPeriods">Muat Ulang Daftar Periode</button></div>
+    </div>
+  </section>
+
+
+  <!-- ================= AKUN ================= -->
+  <section class="panel" id="panel-akun">
+    <div class="card">
+      <h2>Akun Saya</h2>
+      <div class="hint" id="akunInfo">–</div>
+    </div>
+
+    <div class="card">
+      <h2>Ganti Password</h2>
+      <p class="hint" style="margin-bottom:14px;">Mengganti password akan mengeluarkan akun Anda dari semua perangkat lain yang masih login.</p>
+      <div class="field">
+        <label>Password saat ini</label>
+        <div class="pw-wrap">
+          <input type="password" id="accOld" autocomplete="current-password">
+          <button type="button" class="pw-toggle" data-pw="accOld">Lihat</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Password baru</label>
+        <div class="pw-wrap">
+          <input type="password" id="accNew" autocomplete="new-password">
+          <button type="button" class="pw-toggle" data-pw="accNew">Lihat</button>
+        </div>
+      </div>
+      <div class="pw-rules">Minimal 8 karakter, harus mengandung huruf dan angka.</div>
+      <div class="field">
+        <label>Ulangi password baru</label>
+        <div class="pw-wrap">
+          <input type="password" id="accConfirm" autocomplete="new-password">
+          <button type="button" class="pw-toggle" data-pw="accConfirm">Lihat</button>
+        </div>
+      </div>
+      <div class="btn-row"><button class="btn" id="btnAccSave">Simpan Password Baru</button></div>
+      <div class="auth-msg" id="accMsg"></div>
+    </div>
+
+    <!-- Hanya tampil untuk Owner (disembunyikan oleh applyRolePermissions) -->
+    <div class="card" id="userAdminCard" style="display:none;">
+      <h2>Manajemen Pengguna</h2>
+      <p class="hint">Atur siapa saja yang boleh masuk dan sampai mana hak aksesnya. Owner tidak bisa melihat password siapa pun — bila ada yang lupa, gunakan tombol <b>Reset Password</b> untuk memberi password sementara yang wajib diganti saat mereka login berikutnya.</p>
+      <div id="userAdminList" class="empty" style="margin-top:12px;">Memuat...</div>
+      <div class="btn-row">
+        <button class="btn secondary" id="btnRefreshUsers">Muat Ulang Daftar</button>
+      </div>
+
+      <h3 style="margin-top:20px;">Tambah Pengguna Baru</h3>
+      <div class="row" style="margin-top:8px;">
+        <div class="field"><label>Email</label><input type="text" id="newUserEmail" inputmode="email" spellcheck="false" placeholder="nama@biznetnetworks.com"></div>
+        <div class="field"><label>Nama</label><input type="text" id="newUserName" placeholder="Nama lengkap"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Peran</label><select id="newUserRole"></select></div>
+        <div class="field"><label>Password sementara</label><input type="text" id="newUserPw" value="Biznet123!"></div>
+      </div>
+      <div class="btn-row"><button class="btn" id="btnAddUser">Tambah Pengguna</button></div>
+      <div class="auth-msg" id="userAdminMsg"></div>
     </div>
   </section>
 
@@ -505,11 +698,16 @@ let STATE = {
   items: [],
   awal: {},      // itemId -> {qty, photo, date}
   akhir: {},     // itemId -> {qty, photo, date}
-  weeks: [],     // [{week, date, inspector, sig, values:{itemId:qty}}]
   awalInspector: "",
   akhirInspector: "",
   sigMonthly: "",
   notaPembelian: [], // [{id, date, note, photo}]
+  // Checklist pembelian untuk periode berikutnya:
+  // itemId -> {bought: boolean, qty: number|null}. Daftar barangnya sendiri TIDAK disimpan —
+  // selalu dihitung ulang dari forecast (barang berstatus "Stock Habis"/"Segera Habis"),
+  // supaya checklist otomatis ikut terkini kalau stok akhir masih diperbaiki.
+  checklist: {},
+  checklistBuyer: "",
   customCategories: [],
   // itemId -> true untuk barang yang berubah tapi belum dikonfirmasi tersimpan di server.
   // Disimpan di STATE (ikut ter-cache ke localStorage) supaya kalau HP ditutup/direfresh
@@ -517,7 +715,7 @@ let STATE = {
   // dengan kalau ini disimpan di variabel biasa yang hilang saat halaman dimuat ulang.
   dirtyAwal: {},
   dirtyAkhir: {},
-  dirtyWeek: {},
+  dirtyChecklist: {},
   // true kalau periode yang sedang dimuat BUKAN periode berjalan (sudah lewat / belum
   // waktunya) — dipakai untuk mengunci semua form pencatatan jadi read-only.
   locked: false,
@@ -699,7 +897,6 @@ function applyPeriodFromId(pid){
   // maupun foto) yang tersimpan selalu konsisten dengan periode yang sedang aktif.
   document.getElementById('awalDateHint').textContent = "Tanggal pencatatan mengikuti periode: "+fmtDate(STATE.periodStart);
   document.getElementById('akhirDateHint').textContent = "Tanggal pencatatan mengikuti periode: "+fmtDate(STATE.periodEnd);
-  document.getElementById('weekDate').value = todayIso();
 }
 async function loadPeriod(pid){
   const isDifferentPeriod = STATE.periodId && STATE.periodId !== pid;
@@ -707,7 +904,8 @@ async function loadPeriod(pid){
   if(isDifferentPeriod){
     // Ganti ke periode lain: kosongkan dulu data periode sebelumnya di layar supaya
     // tidak tercampur, baru diisi ulang oleh data periode baru dari server (lihat pullPeriodData).
-    STATE.awal = {}; STATE.akhir = {}; STATE.weeks = []; STATE.notaPembelian = [];
+    STATE.awal = {}; STATE.akhir = {}; STATE.notaPembelian = [];
+    STATE.checklist = {}; STATE.checklistBuyer = "";
     STATE.awalInspector = ""; STATE.akhirInspector = ""; STATE.sigMonthly = "";
     renderStockForms();
   }
@@ -740,7 +938,8 @@ function loadCache(){
 
 /* ---------------- API (Google Apps Script) ---------------- */
 async function apiOnce(action, payload, timeoutMs){
-  const body = Object.assign({action}, payload||{});
+  // token login ikut dikirim di SETIAP permintaan; server menolak kalau tidak sah.
+  const body = Object.assign({action, token: TOKEN}, payload||{});
   const controller = new AbortController();
   const timer = setTimeout(()=>controller.abort(), timeoutMs);
   let res;
@@ -768,21 +967,35 @@ async function apiOnce(action, payload, timeoutMs){
   }catch(parseErr){
     throw new Error("Respons server tidak valid. Pastikan Apps Script sudah di-deploy ulang sebagai versi baru.");
   }
-  if(json && json.error) throw new Error(json.error);
+  if(json && json.error){
+    // Kode error dari server ("AUTH_REQUIRED", "MUST_CHANGE_PASSWORD", "FORBIDDEN")
+    // dibawa serta supaya pemanggil bisa membedakan sesi berakhir dari error biasa.
+    const err = new Error(json.error);
+    err.code = json.code || "";
+    throw err;
+  }
   return json;
 }
 async function api(action, payload){
   if(!CFG.scriptUrl){ toast("Koneksi server belum diatur"); throw new Error("no url"); }
   // 35 detik (dari 25 detik): autosave sekarang biasanya hanya mengirim 1 barang yang berubah
-  // (lihat STATE.dirtyAwal/dirtyAkhir/dirtyWeek), jadi payload jauh lebih kecil dari sebelumnya —
+  // (lihat STATE.dirtyAwal/dirtyAkhir), jadi payload jauh lebih kecil dari sebelumnya —
   // tapi foto tetap butuh sedikit ruang ekstra di koneksi yang lambat.
   const TIMEOUT_MS = 35000;
   try{
     return await apiOnce(action, payload, TIMEOUT_MS);
   }catch(e){
+    // Sesi habis / akun dinonaktifkan / password diganti di perangkat lain: jangan
+    // dicoba ulang — langsung kembalikan pengguna ke halaman login.
+    if(e.code === 'AUTH_REQUIRED'){ handleAuthExpired(); throw e; }
     // one automatic retry for transient network/timeout errors, not for server-side/logic errors
     if(/terhubung ke server|Waktu koneksi habis/.test(e.message)){
-      return await apiOnce(action, payload, TIMEOUT_MS);
+      try{
+        return await apiOnce(action, payload, TIMEOUT_MS);
+      }catch(e2){
+        if(e2.code === 'AUTH_REQUIRED'){ handleAuthExpired(); }
+        throw e2;
+      }
     }
     throw e;
   }
@@ -843,9 +1056,14 @@ function markDirty(key, statusId, saveFn){
 // ada) atau 'netop' (belanja lain seperti kabel ties, lakban, baterai, dll). Barang lama
 // yang belum punya field ini (data lokal/legacy) dianggap 'branch' secara default.
 function itemGroup(it){ return (it && it.group) || 'branch'; }
-function itemsInGroup(group){ return STATE.items.filter(it=>itemGroup(it)===group); }
-let activeGroup = { items:'branch', awal:'branch', mingguan:'branch', akhir:'branch' };
-let activeSearch = { awal:'', mingguan:'', akhir:'' };
+// Lapis kedua pembatasan: sekali pun tombol kelompok "dipaksa muncul", daftar barang
+// untuk kelompok yang bukan hak pengguna ini tetap kosong.
+function itemsInGroup(group){
+  if(typeof allowedGroups === 'function' && allowedGroups().indexOf(group) === -1) return [];
+  return STATE.items.filter(it=>itemGroup(it)===group);
+}
+let activeGroup = { items:'branch', awal:'branch', akhir:'branch' };
+let activeSearch = { awal:'', akhir:'', checklist:'' };
 function wireGroupTabs(){
   document.querySelectorAll('.group-tabs').forEach(nav=>{
     const section = nav.dataset.groupFor;
@@ -856,7 +1074,6 @@ function wireGroupTabs(){
         btn.classList.add('active');
         if(section==='items') renderItemsMaster();
         if(section==='awal') renderAwalList();
-        if(section==='mingguan') renderWeeklyForm();
         if(section==='akhir') renderAkhirList();
       });
     });
@@ -866,8 +1083,8 @@ function wireGroupTabs(){
 function wireSearchInputs(){
   const map = [
     ['awalSearch', 'awal', renderAwalList],
-    ['mingguanSearch', 'mingguan', renderWeeklyForm],
-    ['akhirSearch', 'akhir', renderAkhirList]
+    ['akhirSearch', 'akhir', renderAkhirList],
+    ['checklistSearch', 'checklist', renderChecklist]
   ];
   map.forEach(([id, key, renderFn])=>{
     const inp = document.getElementById(id);
@@ -888,6 +1105,7 @@ document.getElementById('tabs').addEventListener('click', (e)=>{
   document.querySelectorAll('section.panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('panel-'+btn.dataset.tab).classList.add('active');
   if(btn.dataset.tab==='forecast') runForecast();
+  if(btn.dataset.tab==='checklist') renderChecklist();
   if(btn.dataset.tab==='riwayat') refreshPeriods();
 });
 
@@ -907,6 +1125,9 @@ function applyLockToCard(cardEl, locked){
     if(el.closest('.search-field')) return;
     if(el.closest('.group-tabs')) return;
     if(el.classList.contains('view-btn')) return;
+    // Tombol ber-class "keep-enabled" hanya membaca data (mis. export PDF checklist),
+    // jadi tetap boleh dipakai walau periodenya sudah terkunci.
+    if(el.classList.contains('keep-enabled')) return;
     el.disabled = locked;
   });
   // Kanvas tanda tangan bukan elemen <input>/<button>, jadi dimatikan lewat pointer-events
@@ -918,11 +1139,13 @@ function applyLockToCard(cardEl, locked){
 }
 function applyPeriodLockUI(){
   const locked = !!STATE.locked;
-  ['awal','nota','mingguan','akhir'].forEach(key=>{
+  ['awal','nota','akhir'].forEach(key=>{
     const notice = document.getElementById('lockedNotice-'+key);
     if(notice) notice.style.display = locked ? 'flex' : 'none';
   });
   document.querySelectorAll('.lockable-form').forEach(card=> applyLockToCard(card, locked));
+  // Checklist pembelian TIDAK ikut aturan kunci di atas — lihat checklistEditable().
+  applyChecklistLockUI();
 }
 document.getElementById('btnUsePeriodNow').addEventListener('click', async ()=>{
   const nowPid = periodIdFrom(computePeriodFor(new Date()).start);
@@ -1050,7 +1273,7 @@ function markItemsDirty(){
   markDirty('items', 'itemsSyncStatus', doSaveItems);
 }
 
-/* ---------------- STOCK FORMS (awal / mingguan / akhir) ---------------- */
+/* ---------------- STOCK FORMS (awal / akhir) ---------------- */
 async function resizeImage(file, maxW, maxH, opts){
   maxH = maxH || maxW; // cap height too, so tall/strip photos (e.g. nota) don't produce huge canvases
   opts = opts || {};
@@ -1301,9 +1524,8 @@ function bindItemRow(rowEl, it, storeObj, onDirty, dirtyMap){
 function renderStockForms(){
   renderAwalList();
   renderAkhirList();
-  renderWeeklyForm();
-  renderWeekHistory();
   renderNotaList();
+  renderChecklist();
 }
 
 function renderGroupFilteredList(wrap, group, storeObj, withPhoto, onDirty, dirtyMap, searchTerm, withView, withIndicator){
@@ -1344,9 +1566,9 @@ function renderGroupFilteredList(wrap, group, storeObj, withPhoto, onDirty, dirt
 // payload yang dikirim ulang setiap kali ada perubahan sekecil apa pun — barang yang diisi
 // belakangan (mis. Milo, kalau kebetulan urutannya di bawah) jadi kena "ongkos" foto semua
 // barang sebelumnya, sampai gagal kena batas waktu koneksi.
-// STATE.dirtyAwal / dirtyAkhir / dirtyWeek menyimpan itemId yang berubah sejak sinkron
+// STATE.dirtyAwal / dirtyAkhir / dirtyChecklist menyimpan itemId yang berubah sejak sinkron
 // terakhir; saat autosave, hanya barang di dalamnya yang dikirim ke server (lihat
-// doSaveAwal/doSaveAkhir/doSaveWeek). Disimpan di STATE (bukan variabel biasa) supaya tetap
+// doSaveAwal/doSaveAkhir/doSaveChecklist). Disimpan di STATE (bukan variabel biasa) supaya tetap
 // tercatat walau halaman direfresh sebelum sempat tersinkron.
 
 // Stok awal
@@ -1359,23 +1581,6 @@ function renderAwalList(){
 function renderAkhirList(){
   renderGroupFilteredList(document.getElementById('akhirList'), activeGroup.akhir, STATE.akhir, true, markAkhirDirty, STATE.dirtyAkhir, activeSearch.akhir, true);
   document.getElementById('akhirInspector').value = STATE.akhirInspector||"";
-}
-
-// Mingguan (current in-progress entry uses a temp object)
-let currentWeekValues = {};
-function renderWeeklyForm(){
-  renderGroupFilteredList(document.getElementById('mingguanList'), activeGroup.mingguan, currentWeekValues, false, markWeekDirty, STATE.dirtyWeek, activeSearch.mingguan, false);
-}
-function renderWeekHistory(){
-  const wrap = document.getElementById('weekHistory');
-  if(!STATE.weeks.length){ wrap.className='empty'; wrap.textContent='Belum ada data.'; return; }
-  wrap.className=''; wrap.innerHTML="";
-  STATE.weeks.slice().sort((a,b)=>a.week-b.week).forEach(w=>{
-    const div = document.createElement('div');
-    div.className='session-item';
-    div.innerHTML = `<span>Minggu ${w.week} — ${fmtDate(w.date)}</span><span class="meta">Diperiksa: ${escapeHtml(w.inspector||'-')}</span>`;
-    wrap.appendChild(div);
-  });
 }
 
 // Ambil hanya barang yang tercatat "berubah" di dirtyMap (kalau ada), supaya payload yang
@@ -1438,35 +1643,6 @@ document.getElementById('akhirInspector').addEventListener('input', ()=>{
   STATE.akhirInspector = document.getElementById('akhirInspector').value.trim();
   markAkhirDirty();
 });
-
-async function doSaveWeek(){
-  if(!STATE.periodId) return;
-  const week = Number(document.getElementById('weekNumber').value)||1;
-  const date = document.getElementById('weekDate').value || todayIso();
-  const inspector = document.getElementById('weekInspector').value.trim();
-  const sig = sigCanvases.sigWeekly.toDataURL('image/png');
-  const entry = {week, date, inspector, sig, values: JSON.parse(JSON.stringify(currentWeekValues))};
-  const values = pickValuesToSend(currentWeekValues, STATE.dirtyWeek);
-  await api('saveEntry', {periodId: STATE.periodId, type:'mingguan', week, date, inspector, values, signature: sig});
-  clearDirtyMap(STATE.dirtyWeek);
-  STATE.weeks = STATE.weeks.filter(w=>w.week!==week);
-  STATE.weeks.push(entry);
-  cacheState();
-  renderWeekHistory();
-}
-document.getElementById('btnSaveWeek').addEventListener('click', async ()=>{
-  if(!STATE.periodId){ toast("Muat periode dulu di tab Pengaturan"); return; }
-  if(STATE.locked){ toast("Periode ini terkunci, tidak bisa disimpan"); return; }
-  try{
-    const week = Number(document.getElementById('weekNumber').value)||1;
-    await doSaveWeek();
-    toast("Cek mingguan ke-"+week+" tersimpan");
-  }catch(e){ toast("Gagal simpan: "+e.message); }
-});
-function markWeekDirty(){ markDirty('mingguan', 'mingguanSyncStatus', doSaveWeek); }
-document.getElementById('weekInspector').addEventListener('input', markWeekDirty);
-document.getElementById('weekNumber').addEventListener('input', markWeekDirty);
-document.getElementById('weekDate').addEventListener('input', markWeekDirty);
 
 /* ---------------- NOTA PEMBELIAN ---------------- */
 function notaRowTemplate(n){
@@ -1553,6 +1729,247 @@ document.getElementById('btnSaveNota').addEventListener('click', async ()=>{
 });
 function markNotaDirty(){ markDirty('nota', 'notaSyncStatus', doSaveNota); }
 
+/* ---------------- CHECKLIST PEMBELIAN PERIODE BERIKUTNYA ---------------- */
+// Checklist ini dibuat DARI periode yang sedang dimuat (barang yang stoknya habis / segera
+// habis saat stok akhir), tetapi DIPAKAI saat belanja di awal periode berikutnya. Karena itu
+// aturan kuncinya sengaja berbeda dari form stok: checklist masih boleh diisi/dicentang
+// selama periode itu sendiri masih berjalan ATAU sudah masuk periode sesudahnya (masa
+// belanja). Periode yang lebih lama dari itu baru benar-benar terkunci. Aturan yang sama
+// juga diberlakukan ulang di server (lihat canEditChecklist di code.gs).
+function prevPeriodIdOf(pid){
+  const parts = String(pid||'').split('-');
+  let y = Number(parts[0]), m = Number(parts[1]) - 1;
+  if(!y || !parts[1]) return '';
+  if(m < 1){ m = 12; y -= 1; }
+  return y + '-' + String(m).padStart(2,'0');
+}
+function checklistEditable(){
+  if(!STATE.periodId) return false;
+  const nowPid = periodIdFrom(computePeriodFor(new Date()).start);
+  return STATE.periodId === nowPid || STATE.periodId === prevPeriodIdOf(nowPid);
+}
+function applyChecklistLockUI(){
+  const card = document.getElementById('checklistCard');
+  if(!card) return;
+  const locked = !checklistEditable();
+  const notice = document.getElementById('lockedNotice-checklist');
+  if(notice) notice.style.display = locked ? 'flex' : 'none';
+  applyLockToCard(card, locked);
+}
+
+// Daftar barang yang masuk checklist = hasil forecast dengan status "Stock Habis" /
+// "Segera Habis", memakai kolom "Saran Beli" (reorder) sebagai jumlah yang harus dibeli.
+function checklistRows(){
+  // Checklist juga disaring per kelompok: pengguna netop hanya melihat & menyimpan
+  // barang netop (server ikut menjaga centang kelompok lain agar tidak terhapus).
+  const groups = (typeof allowedGroups === 'function') ? allowedGroups() : ['branch','netop'];
+  return computeForecastRows()
+    .filter(r=> r.status==='habis' || r.status==='segera')
+    .filter(r=>{
+      const it = STATE.items.find(x=>x.id===r.id);
+      return groups.indexOf(itemGroup(it)) > -1;
+    });
+}
+function clEntry(itemId){
+  if(!STATE.checklist[itemId]) STATE.checklist[itemId] = {bought:false, qty:null};
+  return STATE.checklist[itemId];
+}
+function clTargetOf(row){
+  const t = Number(row.reorder);
+  return isFinite(t) ? t : 0;
+}
+// Keterangan otomatis: membandingkan jumlah yang benar-benar dibeli dengan jumlah
+// yang seharusnya dibeli.
+function clNoteFor(row, entry){
+  const target = clTargetOf(row);
+  if(entry.qty == null || entry.qty === '') {
+    return {text: entry.bought ? 'Jumlah belum diisi' : 'Belum dibeli', cls: 'neutral', plain: entry.bought ? 'Jumlah belum diisi' : 'Belum dibeli'};
+  }
+  const q = Number(entry.qty);
+  const diff = q - target;
+  if(diff === 0) return {text:'Pas', cls:'ok', plain:'Pas'};
+  if(diff > 0) return {text:'Lebih +'+fmtNum(diff)+' '+row.unit, cls:'watch', plain:'Lebih +'+fmtNum(diff)+' '+row.unit};
+  return {text:'Kurang '+fmtNum(diff)+' '+row.unit, cls:'danger', plain:'Kurang '+fmtNum(diff)+' '+row.unit};
+}
+function fmtNum(n){
+  const v = Number(n);
+  if(!isFinite(v)) return String(n);
+  return String(Math.round(v*100)/100);
+}
+
+function renderChecklist(){
+  const wrap = document.getElementById('checklistList');
+  const summary = document.getElementById('checklistSummary');
+  const hint = document.getElementById('checklistPeriodHint');
+  if(!wrap) return;
+
+  const buyerInput = document.getElementById('checklistBuyer');
+  if(buyerInput && document.activeElement !== buyerInput) buyerInput.value = STATE.checklistBuyer || '';
+
+  if(hint){
+    hint.textContent = STATE.periodId
+      ? 'Disusun dari stok akhir periode '+periodLabel(STATE.periodId)+' — untuk dibelanjakan pada periode berikutnya.'
+      : 'Muat periode terlebih dahulu di tab Pengaturan.';
+  }
+
+  const rows = STATE.periodId ? checklistRows() : [];
+
+  // Ringkasan progres selalu dihitung dari SELURUH daftar, bukan hasil pencarian,
+  // supaya angkanya tidak ikut berubah saat pengguna mengetik di kolom cari.
+  const total = rows.length;
+  const done = rows.filter(r=> clEntry(r.id).bought).length;
+  const mismatch = rows.filter(r=>{
+    const e = clEntry(r.id);
+    return e.bought && e.qty != null && e.qty !== '' && Number(e.qty) !== clTargetOf(r);
+  }).length;
+  summary.innerHTML = `
+    <div class="cl-stat"><div class="n">${total}</div><div class="l">Barang perlu dibeli</div></div>
+    <div class="cl-stat"><div class="n">${done}</div><div class="l">Sudah dibeli</div></div>
+    <div class="cl-stat"><div class="n">${total-done}</div><div class="l">Belum dibeli</div></div>
+    <div class="cl-stat"><div class="n">${mismatch}</div><div class="l">Jumlah tidak pas</div></div>`;
+
+  if(!total){
+    wrap.className = 'empty';
+    wrap.textContent = STATE.periodId
+      ? 'Tidak ada barang berstatus Stock Habis atau Segera Habis pada periode ini. Isi stok akhir terlebih dahulu di tab Stok Akhir.'
+      : 'Muat periode terlebih dahulu di tab Pengaturan.';
+    applyChecklistLockUI();
+    return;
+  }
+
+  const q = (activeSearch.checklist||'').trim().toLowerCase();
+  const shown = q ? rows.filter(r=> String(r.name||'').toLowerCase().includes(q)) : rows;
+  wrap.className = '';
+  if(!shown.length){
+    wrap.className = 'empty';
+    wrap.textContent = 'Tidak ada barang yang cocok dengan pencarian.';
+    applyChecklistLockUI();
+    return;
+  }
+
+  wrap.innerHTML = '';
+  groupRowsByCategory(shown).forEach(grp=>{
+    const head = document.createElement('div');
+    head.className = 'modal-section-title';
+    head.textContent = grp.category;
+    wrap.appendChild(head);
+
+    grp.rows.forEach(r=>{
+      const e = clEntry(r.id);
+      const note = clNoteFor(r, e);
+      const div = document.createElement('div');
+      div.className = 'item-line cl-line' + (e.bought ? ' done' : '');
+      div.innerHTML = `
+        <div class="head">
+          <div class="name">${escapeHtml(r.name)}</div>
+          <div class="cat">${statusLabel(r.status)}</div>
+        </div>
+        <div class="cl-grid">
+          <label class="cl-check"><input type="checkbox" data-cl="bought" ${e.bought?'checked':''}> Sudah dibeli</label>
+          <div class="cl-target">Harus dibeli: <b>${fmtNum(clTargetOf(r))} ${escapeHtml(r.unit)}</b><br>Stok akhir: <b>${r.akhir} ${escapeHtml(r.unit)}</b></div>
+          <div class="field cl-qty">
+            <label>Jumlah dibeli (${escapeHtml(r.unit)})</label>
+            <input type="number" min="0" step="any" data-cl="qty" value="${e.qty!=null?e.qty:''}" placeholder="0">
+          </div>
+          <div class="cl-note"><span class="badge ${note.cls}">${escapeHtml(note.text)}</span></div>
+        </div>`;
+
+      const chk = div.querySelector('[data-cl="bought"]');
+      const qty = div.querySelector('[data-cl="qty"]');
+      const noteWrap = div.querySelector('.cl-note');
+      const refreshNote = ()=>{
+        const nn = clNoteFor(r, e);
+        noteWrap.innerHTML = `<span class="badge ${nn.cls}">${escapeHtml(nn.text)}</span>`;
+        div.classList.toggle('done', !!e.bought);
+      };
+      chk.addEventListener('change', ()=>{
+        e.bought = chk.checked;
+        // Mencentang tanpa mengisi jumlah hampir selalu berarti "dibeli sesuai jumlah yang
+        // diminta", jadi jumlahnya diisikan otomatis — tetap bisa diubah manual kalau meleset.
+        if(e.bought && (e.qty == null || e.qty === '')){
+          e.qty = clTargetOf(r);
+          qty.value = e.qty;
+        }
+        STATE.dirtyChecklist[r.id] = true;
+        refreshNote();
+        renderChecklistSummaryOnly();
+        markChecklistDirty();
+      });
+      qty.addEventListener('input', ()=>{
+        e.qty = qty.value === '' ? null : Number(qty.value);
+        STATE.dirtyChecklist[r.id] = true;
+        refreshNote();
+        renderChecklistSummaryOnly();
+        markChecklistDirty();
+      });
+      wrap.appendChild(div);
+    });
+  });
+  applyChecklistLockUI();
+}
+
+// Perbarui hanya kotak ringkasan (tanpa menggambar ulang seluruh daftar), supaya fokus
+// kursor pengguna di kolom "Jumlah dibeli" tidak hilang saat mengetik.
+function renderChecklistSummaryOnly(){
+  const summary = document.getElementById('checklistSummary');
+  if(!summary || !STATE.periodId) return;
+  const rows = checklistRows();
+  const total = rows.length;
+  const done = rows.filter(r=> clEntry(r.id).bought).length;
+  const mismatch = rows.filter(r=>{
+    const e = clEntry(r.id);
+    return e.bought && e.qty != null && e.qty !== '' && Number(e.qty) !== clTargetOf(r);
+  }).length;
+  summary.innerHTML = `
+    <div class="cl-stat"><div class="n">${total}</div><div class="l">Barang perlu dibeli</div></div>
+    <div class="cl-stat"><div class="n">${done}</div><div class="l">Sudah dibeli</div></div>
+    <div class="cl-stat"><div class="n">${total-done}</div><div class="l">Belum dibeli</div></div>
+    <div class="cl-stat"><div class="n">${mismatch}</div><div class="l">Jumlah tidak pas</div></div>`;
+}
+
+async function doSaveChecklist(){
+  if(!STATE.periodId) return;
+  STATE.checklistBuyer = (document.getElementById('checklistBuyer').value||'').trim();
+  const rows = checklistRows().map(r=>{
+    const e = clEntry(r.id);
+    return {
+      itemId: r.id,
+      target: clTargetOf(r),
+      bought: !!e.bought,
+      qty: (e.qty == null || e.qty === '') ? '' : Number(e.qty)
+    };
+  });
+  await api('saveChecklist', {periodId: STATE.periodId, buyer: STATE.checklistBuyer, rows});
+  clearDirtyMap(STATE.dirtyChecklist);
+  cacheState();
+}
+function markChecklistDirty(){ markDirty('checklist', 'checklistSyncStatus', doSaveChecklist); }
+
+document.getElementById('checklistBuyer').addEventListener('input', markChecklistDirty);
+document.getElementById('btnSaveChecklist').addEventListener('click', async ()=>{
+  if(!STATE.periodId){ toast("Muat periode dulu di tab Pengaturan"); return; }
+  if(!checklistEditable()){ toast("Checklist periode ini sudah terkunci"); return; }
+  try{
+    await doSaveChecklist();
+    toast("Checklist pembelian tersimpan");
+  }catch(e){ toast("Gagal simpan: "+e.message); }
+});
+document.getElementById('btnChecklistPrevPeriod').addEventListener('click', async ()=>{
+  const prev = prevPeriodIdOf(STATE.periodId);
+  if(!prev){ toast("Muat periode dulu di tab Pengaturan"); return; }
+  await loadPeriod(prev);
+  renderChecklist();
+});
+document.getElementById('btnExportChecklistPdf').addEventListener('click', async ()=>{
+  if(!STATE.periodId){ toast("Muat periode dulu di tab Pengaturan"); return; }
+  toast("Menyiapkan PDF checklist...");
+  try{
+    const pdf = await buildReportPdf({checklistOnly:true});
+    pdf.save('Checklist-Pembelian-CampangRaya-'+(STATE.periodId||'periode')+'.pdf');
+  }catch(e){ toast("Gagal membuat PDF: "+e.message); }
+});
+
+
 /* ---------------- SIGNATURE PADS ---------------- */
 const sigCanvases = {};
 function setupSignaturePad(id, onDirty){
@@ -1592,7 +2009,6 @@ document.querySelectorAll('[data-clear]').forEach(b=>{
     const canvas = sigCanvases[b.dataset.clear];
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0,0,canvas.width,canvas.height);
-    if(b.dataset.clear==='sigWeekly') markWeekDirty();
     if(b.dataset.clear==='sigMonthly') markAkhirDirty();
   });
 });
@@ -1607,11 +2023,6 @@ function computeForecastRows(){
     if(STATE.awal[it.id] && STATE.awal[it.id].qty!=null){
       points.push({date: new Date(STATE.periodStart), qty: Number(STATE.awal[it.id].qty)});
     }
-    STATE.weeks.forEach(w=>{
-      if(w.values[it.id] && w.values[it.id].qty!=null){
-        points.push({date:new Date(w.date), qty:Number(w.values[it.id].qty)});
-      }
-    });
     if(STATE.akhir[it.id] && STATE.akhir[it.id].qty!=null){
       points.push({date: new Date(STATE.periodEnd), qty: Number(STATE.akhir[it.id].qty)});
     }
@@ -1675,9 +2086,6 @@ function openItemReport(itemId){
   if(!it) return;
   const awalVal = STATE.awal[itemId] || {};
   const akhirVal = STATE.akhir[itemId] || {};
-  const weekRows = STATE.weeks.slice().sort((a,b)=>a.week-b.week)
-    .map(w=> ({week:w.week, date:w.date, qty: w.values && w.values[itemId] ? w.values[itemId].qty : null}))
-    .filter(r=> r.qty!=null);
   const forecastRow = computeForecastRows().find(r=> r.id === itemId) || null;
 
   let html = `
@@ -1701,14 +2109,6 @@ function openItemReport(itemId){
       <tr><td>Stok Awal</td><td>${awalVal.qty!=null ? awalVal.qty+' '+escapeHtml(it.unit) : '-'}</td></tr>
       <tr><td>Stok Akhir</td><td>${akhirVal.qty!=null ? akhirVal.qty+' '+escapeHtml(it.unit) : '-'}</td></tr>
     </table>`;
-
-  if(weekRows.length){
-    html += `<div class="modal-section-title">Cek Mingguan</div><table class="modal-table">`;
-    weekRows.forEach(r=>{
-      html += `<tr><td>Minggu ${r.week} · ${fmtDate(r.date)}</td><td>${r.qty} ${escapeHtml(it.unit)}</td></tr>`;
-    });
-    html += `</table>`;
-  }
 
   if(forecastRow){
     html += `<div class="modal-section-title">Forecast</div><table class="modal-table">
@@ -1752,7 +2152,7 @@ function groupRowsByCategory(rows){
 }
 function runForecast(){
   if(!STATE.periodId){ document.getElementById('forecastMeta').textContent='Muat periode terlebih dahulu di tab Pengaturan.'; return; }
-  document.getElementById('forecastMeta').textContent = 'Periode '+fmtDate(STATE.periodStart)+' – '+fmtDate(STATE.periodEnd)+'. Dihitung dari data stok awal, '+STATE.weeks.length+' kali cek mingguan, dan stok akhir.';
+  document.getElementById('forecastMeta').textContent = 'Periode '+fmtDate(STATE.periodStart)+' – '+fmtDate(STATE.periodEnd)+'. Dihitung dari data stok awal dan stok akhir periode ini.';
   const rows = computeForecastRows();
   const body = document.getElementById('forecastBody');
   body.innerHTML = "";
@@ -1769,19 +2169,16 @@ function runForecast(){
       <td>${statusLabel(r.status)}</td>`;
     body.appendChild(tr);
   });
-  // signature previews
-  document.getElementById('sigWeeklyPreviewWrap').innerHTML = STATE.weeks.length
-    ? `<img src="${STATE.weeks[STATE.weeks.length-1].sig}" style="max-width:220px;border:1px solid var(--line);border-radius:3px;">
-       <div class="hint">${escapeHtml(STATE.weeks[STATE.weeks.length-1].inspector||'-')} · Minggu ${STATE.weeks[STATE.weeks.length-1].week}</div>`
-    : `<div class="hint">Belum ada.</div>`;
+  // signature preview
   document.getElementById('sigMonthlyPreviewWrap').innerHTML = STATE.sigMonthly
     ? `<img src="${STATE.sigMonthly}" style="max-width:220px;border:1px solid var(--line);border-radius:3px;">
        <div class="hint">${escapeHtml(STATE.akhirInspector||'-')}</div>`
     : `<div class="hint">Belum ada.</div>`;
 
   renderPurchaseNeedsTable(rows);
-  renderAkhirPhotoGrid();
+  renderComparisonPhotoGrid();
   renderNotaPhotoGrid();
+  renderChecklist();
 }
 
 // Tabel "Kondisi Stok Akhir": daftar barang yang perlu dibeli bulan depan,
@@ -1805,24 +2202,61 @@ function renderPurchaseNeedsTable(rows){
     </tr>`).join('');
 }
 
-function renderAkhirPhotoGrid(){
-  const grid = document.getElementById('akhirPhotoGrid');
-  const card = document.getElementById('pdfAkhirPhotos');
-  const withPhoto = STATE.items.filter(it => STATE.akhir[it.id] && STATE.akhir[it.id].photo);
-  if(!withPhoto.length){
+// Barang yang punya foto stok awal ATAU stok akhir — dipakai bersama oleh pratinjau di
+// layar dan oleh lampiran perbandingan di PDF, supaya urutan & isinya selalu sama persis.
+function comparisonItems(){
+  const withPhoto = STATE.items.filter(it =>
+    (STATE.awal[it.id] && STATE.awal[it.id].photo) || (STATE.akhir[it.id] && STATE.akhir[it.id].photo)
+  );
+  // Diurutkan per kategori supaya barang sejenis berdekatan di halaman lampiran.
+  const ordered = [];
+  groupRowsByCategory(withPhoto.map(it=>({_item:it, category: it.category || 'Lainnya'})))
+    .forEach(g=> g.rows.forEach(r=> ordered.push(r._item)));
+  return ordered;
+}
+
+function renderComparisonPhotoGrid(){
+  const grid = document.getElementById('cmpPhotoGrid');
+  const card = document.getElementById('pdfCmpPhotos');
+  const items = comparisonItems();
+  if(!items.length){
     card.style.display = 'none';
     grid.innerHTML = '';
     return;
   }
   card.style.display = '';
-  grid.innerHTML = withPhoto.map(it=>{
-    const v = STATE.akhir[it.id];
-    return pgItemHtml(v.photo, escapeHtml(it.name), `${v.qty!=null?v.qty:'-'} ${escapeHtml(it.unit)} · ${escapeHtml(it.category)}`);
+  grid.innerHTML = items.map(it=>{
+    const a = STATE.awal[it.id] || {};
+    const k = STATE.akhir[it.id] || {};
+    const half = (v, label, stage)=>`
+      <div class="cmp-half">
+        <div class="cmp-photo-wrap" data-stage="${stage}">
+          ${v.photo ? `<img src="${v.photo}"><button type="button" class="dl-btn photo-dl-btn" title="Unduh foto" aria-label="Unduh foto">${DOWNLOAD_ICON_SVG}</button>`
+                    : `<div class="photo-placeholder">Belum ada foto</div>`}
+        </div>
+        <div class="cmp-lbl">${label}: ${v.qty!=null?v.qty:'-'} ${escapeHtml(it.unit)}</div>
+      </div>`;
+    let delta = '';
+    if(a.qty!=null && k.qty!=null){
+      const d = Number(a.qty) - Number(k.qty);
+      delta = `<div class="cmp-delta" style="color:${d>0?'var(--danger-fg)':'var(--ok-fg)'}">Terpakai: ${fmtNum(d)} ${escapeHtml(it.unit)}</div>`;
+    }
+    return `<div class="cmp-item">
+      <div class="cmp-pair">${half(a,'STOK AWAL','awal')}${half(k,'STOK AKHIR','akhir')}</div>
+      <div class="cmp-name">${escapeHtml(it.name)}</div>
+      <div class="cmp-meta">${escapeHtml(it.category||'Lainnya')}</div>
+      ${delta}
+    </div>`;
   }).join('');
-  grid.querySelectorAll('.pg-item').forEach((el, idx)=>{
-    const it = withPhoto[idx];
-    const v = STATE.akhir[it.id];
-    wirePhotoDlBtn(el, ()=> v.photo, ()=> itemPhotoFilename(it,'StokAkhir',v.photo));
+
+  grid.querySelectorAll('.cmp-item').forEach((el, idx)=>{
+    const it = items[idx];
+    el.querySelectorAll('.cmp-photo-wrap').forEach(wrapEl=>{
+      const stage = wrapEl.dataset.stage;
+      const store = stage==='awal' ? STATE.awal : STATE.akhir;
+      const label = stage==='awal' ? 'StokAwal' : 'StokAkhir';
+      wirePhotoDlBtn(wrapEl, ()=> (store[it.id]||{}).photo, ()=> itemPhotoFilename(it, label, (store[it.id]||{}).photo));
+    });
   });
 }
 
@@ -1873,7 +2307,10 @@ function loadImageSize(dataUri){
 // halaman. Dengan autoTable, setiap baris tabel otomatis pindah ke halaman
 // berikutnya secara utuh (tidak pernah terpotong), header tabel diulang tiap
 // halaman baru, dan setiap bagian laporan dikelompokkan per kategori barang.
-async function buildReportPdf(){
+// opt.checklistOnly = true  -> hanya cetak halaman Checklist Pembelian (dipakai tombol
+// "Export Checklist ke PDF" di tab Checklist). Tanpa opsi itu, seluruh laporan dicetak.
+async function buildReportPdf(opt){
+  opt = opt || {};
   const { jsPDF } = window.jspdf;
   const pdf = new jsPDF('p','mm','a4');
   const pageW = pdf.internal.pageSize.getWidth();
@@ -1958,7 +2395,8 @@ async function buildReportPdf(){
 
   // Gambar satu tabel per kategori (autoTable menangani sendiri page-break-nya:
   // baris tidak pernah terpotong, dan header tabel diulang di tiap halaman baru).
-  function drawGroupedTable(groups, columns, colStyles){
+  function drawGroupedTable(groups, columns, colStyles, extra){
+    extra = extra || {};
     groups.forEach(g=>{
       if(!g.rows.length) return;
       categoryHeading(g.category);
@@ -1978,10 +2416,85 @@ async function buildReportPdf(){
             data.cell.styles.textColor = statusColor(data.cell.raw);
             data.cell.styles.fontStyle = 'bold';
           }
+          if(data.section==='body' && colDef && colDef.noteCol){
+            const raw = String(data.cell.raw||'');
+            data.cell.styles.fontStyle = 'bold';
+            data.cell.styles.textColor = raw.indexOf('Kurang')>=0 ? C_DANGER_FG
+                                       : raw.indexOf('Pas')>=0 ? C_OK_FG
+                                       : C_INK_SOFT;
+          }
+        },
+        // Kotak centang digambar manual (bukan karakter ☐), karena font bawaan
+        // jsPDF tidak punya glyph kotak/centang dan akan tercetak sebagai kotak kosong.
+        didDrawCell: function(data){
+          const colDef = columns[data.column.index];
+          if(data.section!=='body' || !colDef || !colDef.checkCol) return;
+          const box = 3.4;
+          const bx = data.cell.x + (data.cell.width - box)/2;
+          const by = data.cell.y + (data.cell.height - box)/2;
+          pdf.setDrawColor.apply(pdf, C_INK_SOFT);
+          pdf.setLineWidth(0.3);
+          pdf.rect(bx, by, box, box);
+          if(colDef.isChecked && colDef.isChecked(g.rows[data.row.index])){
+            pdf.setDrawColor.apply(pdf, C_GREEN);
+            pdf.setLineWidth(0.6);
+            pdf.line(bx+0.7, by+box/2, bx+box/2.4, by+box-0.8);
+            pdf.line(bx+box/2.4, by+box-0.8, bx+box-0.6, by+0.7);
+          }
         }
       });
       cursorY = pdf.lastAutoTable.finalY + 8;
     });
+  }
+
+  // Halaman "Checklist Pembelian" — dipakai baik oleh laporan lengkap maupun oleh
+  // tombol Export Checklist tersendiri.
+  function addChecklistSection(needed){
+    sectionTitle('Checklist Pembelian — Periode Berikutnya');
+    bodyText('Daftar barang yang stoknya habis / segera habis pada akhir periode '
+      + (STATE.periodId ? periodLabel(STATE.periodId) : '-')
+      + '. Centang kolom "Beli" setiap barang yang sudah dibeli, lalu tulis jumlah yang benar-benar dibeli pada kolom "Jml Dibeli".', {marginBottom:6});
+
+    drawGroupedTable(groupRowsByCategory(needed), [
+      {header:'Beli', get:()=>'', checkCol:true, isChecked:(r)=> !!clEntry(r.id).bought},
+      {header:'Nama Barang', get:r=>r.name},
+      {header:'Stok Akhir', get:r=>r.akhir+' '+r.unit},
+      {header:'Harus Dibeli', get:r=>fmtNum(clTargetOf(r))+' '+r.unit},
+      {header:'Jml Dibeli', get:r=>{
+        const e = clEntry(r.id);
+        return (e.qty==null || e.qty==='') ? '...........' : fmtNum(e.qty)+' '+r.unit;
+      }},
+      {header:'Keterangan', get:r=> clNoteFor(r, clEntry(r.id)).plain, noteCol:true},
+      {header:'Status', get:r=>statusLabelText(r.status), statusCol:true}
+    ], {
+      0:{cellWidth:11, halign:'center'},
+      1:{cellWidth:'auto'},
+      2:{cellWidth:20, halign:'right'},
+      3:{cellWidth:22, halign:'right'},
+      4:{cellWidth:22, halign:'right'},
+      5:{cellWidth:27},
+      6:{cellWidth:22}
+    });
+
+    // Baris tanda tangan petugas belanja
+    ensureSpace(30);
+    cursorY += 4;
+    pdf.setFont(undefined,'normal'); pdf.setFontSize(9);
+    pdf.setTextColor.apply(pdf, C_INK_SOFT);
+    pdf.text('Petugas belanja:', M, cursorY+4);
+    pdf.setDrawColor.apply(pdf, C_LINE);
+    pdf.setLineWidth(0.3);
+    pdf.line(M+30, cursorY+5, M+95, cursorY+5);
+    if(STATE.checklistBuyer){
+      pdf.setFont(undefined,'bold');
+      pdf.setTextColor.apply(pdf, C_INK);
+      pdf.text(STATE.checklistBuyer, M+32, cursorY+4);
+    }
+    pdf.setFont(undefined,'normal');
+    pdf.setTextColor.apply(pdf, C_INK_SOFT);
+    pdf.text('Tanda tangan:', pageW-M-70, cursorY+4);
+    pdf.line(pageW-M-42, cursorY+5, pageW-M, cursorY+5);
+    cursorY += 14;
   }
 
   // Setiap nota pembelian mendapat 1 halaman penuh, foto ditampilkan sebesar
@@ -2039,10 +2552,30 @@ async function buildReportPdf(){
   /* ================= HEADER ================= */
   reportHeader();
 
+  const rows = computeForecastRows();
+  const needed = rows.filter(r=> r.status==='habis' || r.status==='segera');
+
+  /* ===== MODE KHUSUS: hanya cetak Checklist Pembelian ===== */
+  if(opt.checklistOnly){
+    if(!needed.length){
+      bodyText('Tidak ada barang berstatus Stock Habis atau Segera Habis pada periode ini.');
+    } else {
+      addChecklistSection(needed);
+    }
+    const pc = pdf.internal.getNumberOfPages();
+    for(let p=1; p<=pc; p++){
+      pdf.setPage(p);
+      pdf.setFont(undefined,'normal'); pdf.setFontSize(8);
+      pdf.setTextColor.apply(pdf, C_INK_SOFT);
+      pdf.text('Checklist Pembelian — Campang Raya', M, pageH-8);
+      pdf.text('Halaman '+p+' dari '+pc, pageW-M, pageH-8, {align:'right'});
+    }
+    return pdf;
+  }
+
   /* ================= FORECAST (dikelompokkan per kategori) ================= */
   sectionTitle('Laporan & Forecast Kebutuhan Bulan Depan');
-  const rows = computeForecastRows();
-  bodyText('Periode '+fmtDate(STATE.periodStart)+' – '+fmtDate(STATE.periodEnd)+'. Dihitung dari data stok awal, '+STATE.weeks.length+' kali cek mingguan, dan stok akhir.', {marginBottom:6});
+  bodyText('Periode '+fmtDate(STATE.periodStart)+' – '+fmtDate(STATE.periodEnd)+'. Dihitung dari data stok awal dan stok akhir periode ini.', {marginBottom:6});
 
   drawGroupedTable(groupRowsByCategory(rows), [
     {header:'Barang', get:r=>r.name},
@@ -2065,7 +2598,6 @@ async function buildReportPdf(){
   });
 
   /* ================= KONDISI STOK AKHIR — PERLU DIBELI (per kategori) ================= */
-  const needed = rows.filter(r=> r.status==='habis' || r.status==='segera');
   if(needed.length){
     newPage();
     sectionTitle('Kondisi Stok Akhir — Perlu Dibeli');
@@ -2082,59 +2614,103 @@ async function buildReportPdf(){
     });
   }
 
-  /* ================= LAMPIRAN: FOTO KONDISI STOK AKHIR (per kategori) ================= */
-  const akhirItems = STATE.items.filter(it => STATE.akhir[it.id] && STATE.akhir[it.id].photo);
-  if(akhirItems.length){
+  /* ================= CHECKLIST PEMBELIAN PERIODE BERIKUTNYA ================= */
+  if(needed.length){
     newPage();
-    sectionTitle('Lampiran: Kondisi Stok Akhir');
-    bodyText('Foto kondisi stok akhir tiap barang beserta namanya.');
+    addChecklistSection(needed);
+  }
 
-    // 3 kolom x 4 baris = 12 foto per halaman penuh.
-    const cols = 3, gap = 4;
-    const cellW = (CW - gap*(cols-1))/cols;
-    const imgH = 48, captionH = 13, rowH = imgH + captionH + gap;
+  /* ========= LAMPIRAN STOCK: PERBANDINGAN FOTO STOK AWAL & STOK AKHIR =========
+     Tiap barang tampil sebagai satu sel berisi DUA foto berdampingan (stok awal di kiri,
+     stok akhir di kanan). Tata letaknya dikunci 3 kolom x 4 baris = TEPAT 12 perbandingan
+     barang per halaman, jadi paginasinya dihitung manual (bukan mengikuti pengelompokan
+     kategori seperti tabel di atas, yang akan membuat jumlah per halaman tidak rata). */
+  const cmpItems = comparisonItems();
+  if(cmpItems.length){
+    const COLS = 3, ROWS = 4, PER_PAGE = COLS*ROWS;
+    const gap = 4;
+    const cellW = (CW - gap*(COLS-1))/COLS;
+    const pad = 2;
+    const photoGap = 2;
+    const photoW = (cellW - pad*2 - photoGap)/2;
+    // Tinggi foto dipilih sebesar mungkin sambil menjaga 4 baris tetap muat dalam satu
+    // halaman A4 (4 x rowH + posisi awal grid harus tetap di atas batas bawah halaman).
+    const photoH = 36;
+    const lblH = 4.2;
+    const nameH = 10;
+    const cellH = pad + photoH + lblH + nameH;
+    const rowH = cellH + gap;
 
-    const akhirGroups = groupRowsByCategory(akhirItems.map(it=>({
-      _item: it, category: it.category || 'Lainnya'
-    })));
+    const totalPages = Math.ceil(cmpItems.length / PER_PAGE);
 
-    for(const grp of akhirGroups){
-      categoryHeading(grp.category);
-      const items = grp.rows.map(r=>r._item);
-      for(let i=0;i<items.length;i+=cols){
-        ensureSpace(rowH);
-        const rowItems = items.slice(i, i+cols);
-        for(let c=0;c<rowItems.length;c++){
-          const it = rowItems[c];
-          const v = STATE.akhir[it.id];
-          const x = M + c*(cellW+gap);
-          const y = cursorY;
+    for(let pIdx=0; pIdx<totalPages; pIdx++){
+      newPage();
+      sectionTitle('Lampiran Stock: Perbandingan Stok Awal & Stok Akhir');
+      bodyText('Foto tiap barang saat stok awal (kiri) dibandingkan kondisinya saat stok akhir (kanan). '
+        + 'Halaman '+(pIdx+1)+' dari '+totalPages+' lampiran perbandingan, 12 barang per halaman.', {marginBottom:4});
+
+      const pageItems = cmpItems.slice(pIdx*PER_PAGE, (pIdx+1)*PER_PAGE);
+      const gridTop = cursorY;
+
+      for(let i=0; i<pageItems.length; i++){
+        const it = pageItems[i];
+        const r = Math.floor(i/COLS), c = i % COLS;
+        const x = M + c*(cellW+gap);
+        const y = gridTop + r*rowH;
+
+        pdf.setDrawColor.apply(pdf, C_LINE);
+        pdf.setLineWidth(0.2);
+        pdf.rect(x, y, cellW, cellH);
+
+        const stages = [
+          {v: STATE.awal[it.id] || {},  label: 'AWAL'},
+          {v: STATE.akhir[it.id] || {}, label: 'AKHIR'}
+        ];
+
+        for(let sIdx=0; sIdx<2; sIdx++){
+          const st = stages[sIdx];
+          const px = x + pad + sIdx*(photoW+photoGap);
+          const py = y + pad;
+
+          // Kotak pembatas tiap foto, supaya sisi "awal" & "akhir" tetap terbaca
+          // sebagai dua bidang terpisah walau salah satunya belum ada fotonya.
           pdf.setDrawColor.apply(pdf, C_LINE);
-          pdf.setLineWidth(0.2);
-          pdf.rect(x, y, cellW, imgH+captionH);
-          try{
-            const size = await loadImageSize(v.photo);
-            let dw = cellW-4, dh = imgH-4;
-            if(size && size.width && size.height){
-              const ratio = size.width/size.height;
-              dh = dw/ratio;
-              if(dh > imgH-4){ dh = imgH-4; dw = dh*ratio; }
-            }
-            const ix = x + (cellW-dw)/2;
-            const iy = y + 2 + ((imgH-4)-dh)/2;
-            pdf.addImage(v.photo, imgFormatFromDataUri(v.photo), ix, iy, dw, dh);
-          }catch(e){}
-          pdf.setFont(undefined,'bold'); pdf.setFontSize(8);
-          pdf.setTextColor.apply(pdf, C_INK);
-          const nameLines = pdf.splitTextToSize(it.name, cellW-4).slice(0,2);
-          pdf.text(nameLines, x+2, y+imgH+4);
-          pdf.setFont(undefined,'normal'); pdf.setFontSize(7.3);
-          pdf.setTextColor.apply(pdf, C_INK_SOFT);
-          pdf.text((v.qty!=null?v.qty:'-')+' '+it.unit, x+2, y+imgH+4+nameLines.length*3.4);
+          pdf.setLineWidth(0.15);
+          pdf.rect(px, py, photoW, photoH);
+
+          if(st.v.photo){
+            try{
+              const size = await loadImageSize(st.v.photo);
+              let dw = photoW-1.4, dh = photoH-1.4;
+              if(size && size.width && size.height){
+                const ratio = size.width/size.height;
+                dh = dw/ratio;
+                if(dh > photoH-1.4){ dh = photoH-1.4; dw = dh*ratio; }
+              }
+              pdf.addImage(st.v.photo, imgFormatFromDataUri(st.v.photo),
+                px + (photoW-dw)/2, py + (photoH-dh)/2, dw, dh);
+            }catch(e){}
+          } else {
+            pdf.setFont(undefined,'normal'); pdf.setFontSize(6);
+            pdf.setTextColor.apply(pdf, C_INK_SOFT);
+            pdf.text('Tidak ada foto', px + photoW/2, py + photoH/2, {align:'center'});
+          }
+
+          // Label + jumlah stok di bawah tiap foto
+          pdf.setFont(undefined,'bold'); pdf.setFontSize(6.2);
+          pdf.setTextColor.apply(pdf, sIdx===0 ? C_INK_SOFT : C_GREEN_DEEP);
+          const qtyTxt = st.label+': '+(st.v.qty!=null ? st.v.qty : '-')+' '+it.unit;
+          pdf.text(pdf.splitTextToSize(qtyTxt, photoW)[0], px + photoW/2, y + pad + photoH + 3, {align:'center'});
         }
-        cursorY += rowH;
+
+        // Nama barang (maks 2 baris) di bagian bawah sel
+        pdf.setFont(undefined,'bold'); pdf.setFontSize(7.2);
+        pdf.setTextColor.apply(pdf, C_INK);
+        const nameLines = pdf.splitTextToSize(it.name, cellW - pad*2).slice(0,2);
+        pdf.text(nameLines, x + pad, y + pad + photoH + lblH + 3);
       }
-      cursorY += 2;
+
+      cursorY = gridTop + Math.ceil(pageItems.length/COLS)*rowH;
     }
   }
 
@@ -2267,8 +2843,8 @@ function mergeStore(local, server){
   Object.keys(server||{}).forEach(k=>{ merged[k] = server[k]; });
   return merged;
 }
-// Sama seperti mergeStore, tapi untuk data berbentuk array (cek mingguan / nota pembelian),
-// digabung berdasarkan key unik masing-masing (nomor minggu / id nota).
+// Sama seperti mergeStore, tapi untuk data berbentuk array (nota pembelian),
+// digabung berdasarkan key unik masing-masing (id nota).
 function mergeByKey(localArr, serverArr, keyFn){
   const map = {};
   (localArr||[]).forEach(item=>{ map[keyFn(item)] = item; });
@@ -2281,8 +2857,11 @@ async function pullPeriodData(){
     if(res.items && res.items.length) STATE.items = res.items;
     STATE.awal = mergeStore(STATE.awal, res.awal);
     STATE.akhir = mergeStore(STATE.akhir, res.akhir);
-    STATE.weeks = mergeByKey(STATE.weeks, res.weeks, w=>w.week);
     STATE.notaPembelian = mergeByKey(STATE.notaPembelian, res.notas, n=>n.id);
+    // Checklist: nilai server dianggap paling benar, tapi barang yang baru dicentang di HP ini
+    // dan belum sempat tersinkron tidak ditimpa jadi kosong (pola yang sama dengan mergeStore).
+    STATE.checklist = mergeStore(STATE.checklist, res.checklist);
+    if(res.checklistMeta && res.checklistMeta.buyer) STATE.checklistBuyer = res.checklistMeta.buyer;
     if(res.awalMeta && res.awalMeta.inspector) STATE.awalInspector = res.awalMeta.inspector;
     if(res.akhirMeta && res.akhirMeta.inspector) STATE.akhirInspector = res.akhirMeta.inspector;
     if(res.akhirMeta && res.akhirMeta.signature) STATE.sigMonthly = res.akhirMeta.signature;
@@ -2304,13 +2883,386 @@ async function pullPeriodData(){
   }
 }
 
+
+/* ================================================================
+ * AUTENTIKASI & HAK AKSES (sisi tampilan)
+ * ================================================================
+ * Token login disimpan di localStorage dan dikirim pada SETIAP permintaan ke server.
+ * Menyembunyikan tab di sini hanyalah kenyamanan — server (code.gs) tetap memeriksa
+ * ulang hak akses pada setiap permintaan, jadi tab yang "dipaksa muncul" lewat devtools
+ * pun tidak akan bisa menyimpan data yang bukan haknya.
+ */
+const LS_TOKEN = "stokcp_token_v1";
+const LS_USER = "stokcp_user_v1";
+let TOKEN = "";
+let AUTH = null;      // {email, name, role, roleLabel, perms:{tabs, groups, ...}}
+let APP_STARTED = false;
+
+try{ TOKEN = localStorage.getItem(LS_TOKEN) || ""; }catch(e){ TOKEN = ""; }
+
+function setAuthMsg(id, text, cls){
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.textContent = text || "";
+  el.className = "auth-msg" + (cls ? " " + cls : "");
+}
+function showGate(view){
+  const gate = document.getElementById('authGate');
+  gate.classList.remove('hidden');
+  document.getElementById('authLoginView').style.display = (view === 'change') ? 'none' : 'block';
+  document.getElementById('authChangeView').style.display = (view === 'change') ? 'block' : 'none';
+}
+function hideGate(){
+  document.getElementById('authGate').classList.add('hidden');
+}
+function storeToken(tok){
+  TOKEN = tok || "";
+  try{ if(TOKEN) localStorage.setItem(LS_TOKEN, TOKEN); else localStorage.removeItem(LS_TOKEN); }catch(e){}
+}
+// Cache data periode di localStorage dipakai bersama oleh siapa pun yang membuka aplikasi
+// di perangkat ini. Kalau yang login berganti orang, cache milik pengguna sebelumnya
+// dibuang supaya data yang bukan haknya tidak sempat terlihat di layar.
+function resetCacheIfDifferentUser(email){
+  try{
+    const prev = localStorage.getItem(LS_USER) || "";
+    if(prev && prev !== email) localStorage.removeItem(LS_CACHE);
+    localStorage.setItem(LS_USER, email);
+  }catch(e){}
+}
+function clearSessionLocal(){
+  storeToken("");
+  AUTH = null;
+  try{ localStorage.removeItem(LS_CACHE); }catch(e){}
+}
+// Dipanggil saat server menolak token (kedaluwarsa / akun dinonaktifkan / dicabut karena
+// password diganti di perangkat lain). Halaman dimuat ulang supaya tidak ada sisa data
+// pengguna sebelumnya yang masih menempel di memori/tampilan.
+let authExpiredHandled = false;
+function handleAuthExpired(){
+  if(authExpiredHandled) return;
+  authExpiredHandled = true;
+  clearSessionLocal();
+  try{ toast("Sesi berakhir. Silakan login kembali.", 2500); }catch(e){}
+  setTimeout(()=> location.reload(), 900);
+}
+
+async function doLogout(){
+  try{ flushAutosaves(); }catch(e){}
+  const tok = TOKEN;
+  clearSessionLocal();
+  try{ if(tok) await apiOnce('logout', {token: tok}, 8000); }catch(e){}
+  location.reload();
+}
+
+/* ---------------- HAK AKSES DI TAMPILAN ---------------- */
+function allowedGroups(){
+  return (AUTH && AUTH.perms && AUTH.perms.groups) ? AUTH.perms.groups : ['branch','netop'];
+}
+function allowedTabs(){
+  return (AUTH && AUTH.perms && AUTH.perms.tabs) ? AUTH.perms.tabs : [];
+}
+function canDo(perm){
+  return !!(AUTH && AUTH.perms && AUTH.perms[perm]);
+}
+function switchTab(name){
+  const btn = document.querySelector('#tabs button[data-tab="'+name+'"]');
+  if(btn) btn.click();
+}
+// Header jadi lebih tinggi setelah baris identitas pengguna muncul. Baris tab di
+// bawahnya memakai position:sticky dengan jarak tetap dari atas, jadi jaraknya dihitung
+// ulang dari tinggi header yang sebenarnya supaya tidak saling menimpa di layar HP.
+function syncTabsOffset(){
+  const head = document.querySelector('header.top');
+  const nav = document.querySelector('nav.tabs');
+  if(head && nav) nav.style.top = head.offsetHeight + 'px';
+}
+window.addEventListener('resize', syncTabsOffset);
+
+function applyRolePermissions(){
+  if(!AUTH) return;
+  const tabs = allowedTabs();
+
+  document.querySelectorAll('#tabs button[data-tab]').forEach(btn=>{
+    const ok = tabs.indexOf(btn.dataset.tab) > -1;
+    btn.style.display = ok ? '' : 'none';
+    if(!ok){
+      btn.classList.remove('active');
+      const panel = document.getElementById('panel-'+btn.dataset.tab);
+      if(panel) panel.classList.remove('active');
+    }
+  });
+
+  // Kalau tab yang sedang terbuka ternyata bukan hak pengguna ini, pindahkan ke tab
+  // pertama yang boleh dibuka (untuk staff: Stok Awal).
+  const activeBtn = document.querySelector('#tabs button.active');
+  if(!activeBtn || activeBtn.style.display === 'none'){
+    const first = tabs.filter(t => t !== 'akun')[0] || 'akun';
+    document.querySelectorAll('section.panel').forEach(p=>p.classList.remove('active'));
+    switchTab(first);
+  }
+
+  // Tombol filter kelompok Branch/Netop: sembunyikan kelompok yang bukan haknya, lalu
+  // paksa kelompok aktif ke kelompok pertama yang diizinkan.
+  const groups = allowedGroups();
+  document.querySelectorAll('.group-tabs').forEach(nav=>{
+    const section = nav.dataset.groupFor;
+    let visible = 0, firstBtn = null;
+    nav.querySelectorAll('button[data-group]').forEach(btn=>{
+      const ok = groups.indexOf(btn.dataset.group) > -1;
+      btn.style.display = ok ? '' : 'none';
+      if(ok){ visible++; if(!firstBtn) firstBtn = btn; }
+      else btn.classList.remove('active');
+    });
+    // Satu kelompok saja: baris filter tidak berguna lagi, sembunyikan seluruhnya.
+    nav.style.display = visible > 1 ? '' : 'none';
+    if(firstBtn && groups.indexOf(activeGroup[section]) === -1){
+      activeGroup[section] = firstBtn.dataset.group;
+      nav.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
+      firstBtn.classList.add('active');
+    }
+  });
+
+  const adminCard = document.getElementById('userAdminCard');
+  if(adminCard) adminCard.style.display = canDo('manageUsers') ? '' : 'none';
+  const btnEmail = document.getElementById('btnEmailPdf');
+  if(btnEmail) btnEmail.style.display = canDo('emailReport') ? '' : 'none';
+
+  document.getElementById('ubName').textContent = AUTH.name || AUTH.email;
+  document.getElementById('ubRole').textContent = AUTH.roleLabel || AUTH.role;
+  document.getElementById('userBar').style.display = 'flex';
+  syncTabsOffset();
+
+  const info = document.getElementById('akunInfo');
+  if(info){
+    const groupText = groups.length > 1
+      ? 'Belanja Bulanan Branch & Netop'
+      : (groups[0] === 'netop' ? 'Belanja Bulanan Netop saja' : 'Belanja Bulanan Branch saja');
+    info.innerHTML = '<b>'+escapeHtml(AUTH.name||'')+'</b><br>'+escapeHtml(AUTH.email)+
+      '<br>Peran: <b>'+escapeHtml(AUTH.roleLabel||AUTH.role)+'</b>'+
+      '<br>Kelompok barang yang boleh diisi: <b>'+escapeHtml(groupText)+'</b>';
+  }
+
+  renderItemsMaster();
+  renderStockForms();
+}
+
+/* ---------------- FORM LOGIN ---------------- */
+document.querySelectorAll('.pw-toggle').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    const inp = document.getElementById(btn.dataset.pw);
+    if(!inp) return;
+    const show = inp.type === 'password';
+    inp.type = show ? 'text' : 'password';
+    btn.textContent = show ? 'Tutup' : 'Lihat';
+  });
+});
+
+async function submitLogin(){
+  const email = (document.getElementById('loginEmail').value||'').trim();
+  const password = document.getElementById('loginPassword').value||'';
+  if(!email || !password){ setAuthMsg('loginMsg', 'Email dan password wajib diisi.', 'err'); return; }
+  const btn = document.getElementById('btnLogin');
+  btn.disabled = true;
+  setAuthMsg('loginMsg', 'Memeriksa...', 'busy');
+  try{
+    const res = await apiOnce('login', {email, password}, 30000);
+    storeToken(res.token);
+    AUTH = res.user;
+    resetCacheIfDifferentUser(AUTH.email);
+    document.getElementById('loginPassword').value = '';
+    setAuthMsg('loginMsg', '');
+    if(AUTH.mustChangePassword){
+      showGate('change');
+      setAuthMsg('cpMsg', '');
+      return;
+    }
+    await enterApp();
+  }catch(e){
+    setAuthMsg('loginMsg', e.message || 'Gagal masuk.', 'err');
+  }finally{
+    btn.disabled = false;
+  }
+}
+document.getElementById('btnLogin').addEventListener('click', submitLogin);
+['loginEmail','loginPassword'].forEach(id=>{
+  document.getElementById(id).addEventListener('keydown', e=>{ if(e.key==='Enter') submitLogin(); });
+});
+
+/* ---------------- GANTI PASSWORD (dipakai gerbang login & tab Akun) ---------------- */
+async function submitChangePassword(oldId, newId, confId, msgId, btnId){
+  const oldPw = document.getElementById(oldId).value||'';
+  const newPw = document.getElementById(newId).value||'';
+  const conf = document.getElementById(confId).value||'';
+  if(!oldPw || !newPw){ setAuthMsg(msgId, 'Semua kolom wajib diisi.', 'err'); return false; }
+  if(newPw !== conf){ setAuthMsg(msgId, 'Ulangi password tidak sama dengan password baru.', 'err'); return false; }
+  if(newPw.length < 8 || !/[A-Za-z]/.test(newPw) || !/[0-9]/.test(newPw)){
+    setAuthMsg(msgId, 'Password baru minimal 8 karakter dan harus mengandung huruf serta angka.', 'err');
+    return false;
+  }
+  const btn = document.getElementById(btnId);
+  btn.disabled = true;
+  setAuthMsg(msgId, 'Menyimpan...', 'busy');
+  try{
+    const res = await apiOnce('changePassword', {token: TOKEN, oldPassword: oldPw, newPassword: newPw}, 30000);
+    storeToken(res.token);
+    AUTH = res.user;
+    [oldId,newId,confId].forEach(id=>{ document.getElementById(id).value=''; });
+    setAuthMsg(msgId, 'Password berhasil diganti.', 'ok');
+    return true;
+  }catch(e){
+    if(e.code === 'AUTH_REQUIRED'){ handleAuthExpired(); return false; }
+    setAuthMsg(msgId, e.message || 'Gagal mengganti password.', 'err');
+    return false;
+  }finally{
+    btn.disabled = false;
+  }
+}
+document.getElementById('btnCpSave').addEventListener('click', async ()=>{
+  const ok = await submitChangePassword('cpOld','cpNew','cpConfirm','cpMsg','btnCpSave');
+  if(ok) await enterApp();
+});
+document.getElementById('cpCancel').addEventListener('click', (e)=>{ e.preventDefault(); doLogout(); });
+document.getElementById('btnAccSave').addEventListener('click', ()=>{
+  submitChangePassword('accOld','accNew','accConfirm','accMsg','btnAccSave');
+});
+document.getElementById('btnLogout').addEventListener('click', ()=>{
+  if(confirm('Keluar dari aplikasi?')) doLogout();
+});
+
+/* ---------------- MANAJEMEN PENGGUNA (Owner) ---------------- */
+let ROLE_OPTIONS = [];
+function roleSelectHtml(current, attrs){
+  return '<select '+(attrs||'')+'>' + ROLE_OPTIONS.map(r=>
+    '<option value="'+escapeHtml(r.value)+'"'+(r.value===current?' selected':'')+'>'+escapeHtml(r.label)+'</option>'
+  ).join('') + '</select>';
+}
+async function refreshUsers(){
+  if(!canDo('manageUsers')) return;
+  const wrap = document.getElementById('userAdminList');
+  wrap.className = 'empty'; wrap.textContent = 'Memuat...';
+  try{
+    const res = await api('listUsers', {});
+    ROLE_OPTIONS = res.roles || [];
+    const sel = document.getElementById('newUserRole');
+    sel.innerHTML = ROLE_OPTIONS.map(r=> '<option value="'+escapeHtml(r.value)+'">'+escapeHtml(r.label)+'</option>').join('');
+    const users = res.users || [];
+    wrap.className = ''; wrap.innerHTML = '';
+    users.forEach(u=>{
+      const self = u.email === AUTH.email;
+      const div = document.createElement('div');
+      div.className = 'user-row';
+      div.innerHTML =
+        '<div class="ur-top">'+
+          '<div><div class="ur-email">'+escapeHtml(u.email)+(self?' <span class="badge neutral">Anda</span>':'')+'</div>'+
+          '<div class="ur-meta">'+(u.active?'Aktif':'Nonaktif')+
+          (u.mustChangePassword?' · masih memakai password sementara':'')+
+          (u.lastLogin?' · login terakhir '+escapeHtml(u.lastLogin):' · belum pernah login')+'</div></div>'+
+        '</div>'+
+        '<div class="ur-grid">'+
+          '<div class="field" style="margin-bottom:8px;"><label>Nama</label><input type="text" data-uf="name" value="'+escapeHtml(u.name||'')+'"></div>'+
+          '<div class="field" style="margin-bottom:8px;"><label>Peran</label>'+roleSelectHtml(u.role,'data-uf="role"')+'</div>'+
+          '<div class="field" style="margin-bottom:8px;"><label>Status</label><select data-uf="active">'+
+            '<option value="1"'+(u.active?' selected':'')+'>Aktif</option>'+
+            '<option value="0"'+(!u.active?' selected':'')+'>Nonaktif</option>'+
+          '</select></div>'+
+        '</div>'+
+        '<div class="btn-row">'+
+          '<button class="btn" data-act="save">Simpan Perubahan</button>'+
+          '<button class="btn secondary" data-act="reset">Reset Password</button>'+
+          (self?'':'<button class="btn danger" data-act="delete">Hapus</button>')+
+        '</div>';
+
+      div.querySelector('[data-act="save"]').addEventListener('click', async ()=>{
+        try{
+          await api('saveUser', {
+            email: u.email,
+            name: div.querySelector('[data-uf="name"]').value,
+            role: div.querySelector('[data-uf="role"]').value,
+            active: div.querySelector('[data-uf="active"]').value === '1'
+          });
+          toast('Perubahan pengguna tersimpan');
+          refreshUsers();
+        }catch(e){ toast('Gagal: '+e.message, 3800); }
+      });
+
+      div.querySelector('[data-act="reset"]').addEventListener('click', async ()=>{
+        const pw = prompt('Password sementara untuk '+u.email+'\n(minimal 8 karakter, ada huruf dan angka).\nPengguna wajib menggantinya saat login berikutnya.', 'Biznet123!');
+        if(!pw) return;
+        try{
+          await api('resetPassword', {email: u.email, newPassword: pw});
+          toast('Password direset. Sampaikan password sementara ini ke yang bersangkutan.', 4200);
+          refreshUsers();
+        }catch(e){ toast('Gagal: '+e.message, 3800); }
+      });
+
+      const delBtn = div.querySelector('[data-act="delete"]');
+      if(delBtn) delBtn.addEventListener('click', async ()=>{
+        if(!confirm('Hapus akun '+u.email+'? Akun ini tidak akan bisa login lagi.')) return;
+        try{
+          await api('deleteUser', {email: u.email});
+          toast('Pengguna dihapus');
+          refreshUsers();
+        }catch(e){ toast('Gagal: '+e.message, 3800); }
+      });
+
+      wrap.appendChild(div);
+    });
+  }catch(e){
+    wrap.className = 'empty';
+    wrap.textContent = 'Gagal memuat daftar pengguna: '+e.message;
+  }
+}
+document.getElementById('btnRefreshUsers').addEventListener('click', refreshUsers);
+document.getElementById('btnAddUser').addEventListener('click', async ()=>{
+  const email = (document.getElementById('newUserEmail').value||'').trim();
+  const name = (document.getElementById('newUserName').value||'').trim();
+  const role = document.getElementById('newUserRole').value;
+  const password = document.getElementById('newUserPw').value||'';
+  if(!email){ setAuthMsg('userAdminMsg','Email wajib diisi.','err'); return; }
+  setAuthMsg('userAdminMsg','Menyimpan...','busy');
+  try{
+    await api('saveUser', {email, name, role, password, active:true});
+    setAuthMsg('userAdminMsg','Pengguna ditambahkan. Sampaikan password sementaranya ke yang bersangkutan.','ok');
+    document.getElementById('newUserEmail').value = '';
+    document.getElementById('newUserName').value = '';
+    refreshUsers();
+  }catch(e){ setAuthMsg('userAdminMsg', e.message || 'Gagal menambah pengguna.', 'err'); }
+});
+
+/* ---------------- ALUR MASUK APLIKASI ---------------- */
+async function enterApp(){
+  hideGate();
+  if(!APP_STARTED){
+    APP_STARTED = true;
+    await init();           // init() hanya dijalankan SETELAH login berhasil
+  }
+  applyRolePermissions();
+  if(canDo('manageUsers')) refreshUsers();
+}
+
+// Saat halaman dibuka: kalau masih ada token tersimpan, periksa dulu ke server apakah
+// masih berlaku. Kalau tidak, tampilkan form login seperti biasa.
+async function bootAuth(){
+  if(!TOKEN){ showGate('login'); return; }
+  try{
+    const res = await apiOnce('me', {token: TOKEN}, 20000);
+    AUTH = res.user;
+    resetCacheIfDifferentUser(AUTH.email);
+    if(AUTH.mustChangePassword){ showGate('change'); return; }
+    await enterApp();
+  }catch(e){
+    clearSessionLocal();
+    showGate('login');
+    if(e.code !== 'AUTH_REQUIRED' && e.message) setAuthMsg('loginMsg', e.message, 'err');
+  }
+}
+
 /* ---------------- INIT ---------------- */
 async function init(){
   loadConfig();
   loadCache();
   if(!STATE.items.length) STATE.items = JSON.parse(JSON.stringify(SEED_ITEMS));
 
-  setupSignaturePad('sigWeekly', ()=>markWeekDirty());
   setupSignaturePad('sigMonthly', ()=>markAkhirDirty());
 
   buildPeriodSelectOptions();
@@ -2339,7 +3291,9 @@ async function init(){
   // lengkap (lihat catatan di upsertEntryRows pada code.gs untuk perlindungan utamanya).
   if(CFG.scriptUrl){ await pullPeriodData(); }
 }
-init();
+// Aplikasi TIDAK langsung berjalan. bootAuth() memeriksa sesi login lebih dulu, dan
+// init() baru dipanggil dari enterApp() setelah login benar-benar berhasil.
+bootAuth();
 
 })();
 </script>
