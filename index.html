@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
   :root{
     --paper:#EEF2EE;
@@ -123,11 +124,39 @@
   .badge.ok{background:var(--ok-bg); color:var(--ok-fg);}
   .badge.watch{background:var(--watch-bg); color:var(--watch-fg);}
   .badge.danger{background:var(--danger-bg); color:var(--danger-fg);}
+  .badge.neutral{background:var(--tab-bg); color:var(--ink-soft);}
 
-  .item-line{border:1px solid var(--line); border-radius:4px; padding:12px; margin-bottom:10px; background:#FCFDFC;}
-  .item-line .head{display:flex; justify-content:space-between; gap:8px; align-items:baseline; margin-bottom:8px;}
+  /* Notice periode terkunci (read-only) & indikator Dinamika Stok / Safety Stock di Stok Awal */
+  .locked-notice{
+    display:flex; align-items:center; gap:8px;
+    background:var(--watch-bg); color:var(--watch-fg);
+    border:1px solid var(--watch-fg); border-radius:4px;
+    padding:10px 12px; font-size:12.5px; font-weight:600; margin-bottom:14px;
+  }
+  .awal-indicator{margin-top:8px; display:flex; flex-wrap:wrap; gap:6px;}
+  .awal-indicator:empty{margin-top:0;}
+
+  .item-line{position:relative; border:1px solid var(--line); border-radius:4px; padding:12px; margin-bottom:10px; background:#FCFDFC;}
+  .item-line .head{display:flex; justify-content:space-between; gap:8px; align-items:baseline; margin-bottom:8px; padding-right:28px;}
   .item-line .head .name{font-weight:600; font-size:14px;}
   .item-line .head .cat{font-size:11.5px; color:var(--ink-soft);}
+  .view-btn{
+    position:absolute; top:10px; right:10px;
+    background:none; border:none; padding:4px; border-radius:3px;
+    color:var(--ink-soft); display:flex; align-items:center; justify-content:center;
+  }
+  .view-btn:hover{background:var(--tab-bg); color:var(--green-deep);}
+  .view-btn svg{width:18px; height:18px; display:block;}
+  .dl-btn{
+    background:#fff; border:1px solid var(--line); border-radius:3px;
+    padding:5px; display:inline-flex; align-items:center; justify-content:center;
+    color:var(--green-deep); flex:0 0 auto;
+  }
+  .dl-btn:hover{background:var(--tab-bg);}
+  .dl-btn svg{width:16px; height:16px; display:block;}
+  .photo-slot{display:inline-flex; align-items:center; gap:6px; flex:0 0 auto;}
+  .search-field{margin-bottom:12px;}
+  .search-field input{background:#fff;}
   .photo-row{display:flex; gap:8px; align-items:center; margin-top:8px;}
   .photo-thumb{width:56px; height:56px; object-fit:cover; border-radius:3px; border:1px solid var(--line);}
   .photo-placeholder{width:56px; height:56px; border:1px dashed var(--line); border-radius:3px; display:flex; align-items:center; justify-content:center; font-size:10px; color:var(--ink-soft); text-align:center;}
@@ -155,6 +184,8 @@
   .photo-grid .pg-item img{width:100%; height:120px; object-fit:cover; border-radius:3px; border:1px solid var(--line); display:block; margin-bottom:6px;}
   .photo-grid .pg-item .pg-name{font-size:12.5px; font-weight:600; line-height:1.3;}
   .photo-grid .pg-item .pg-meta{font-size:11px; color:var(--ink-soft); margin-top:2px;}
+  .pg-photo-wrap{position:relative;}
+  .pg-photo-wrap .dl-btn{position:absolute; top:6px; right:6px; background:rgba(255,255,255,.92);}
   /* Kondisi Stok Akhir: foto sedikit lebih besar dari grid default */
   #akhirPhotoGrid{grid-template-columns:repeat(auto-fill,minmax(210px,1fr));}
   #akhirPhotoGrid .pg-item img{height:190px;}
@@ -164,6 +195,37 @@
   .group-tabs{display:flex; gap:4px; margin-bottom:12px; border-bottom:1px solid var(--line);}
   .group-tabs button{flex:1; background:none; border:none; border-bottom:3px solid transparent; padding:9px 6px; font-size:12.5px; font-weight:600; color:var(--ink-soft); border-radius:3px 3px 0 0;}
   .group-tabs button.active{color:var(--green-deep); border-bottom-color:var(--green); background:var(--tab-bg);}
+
+  .modal-overlay{
+    position:fixed; inset:0; background:rgba(30,42,34,.55); z-index:200;
+    display:none; align-items:flex-start; justify-content:center;
+    padding:20px 12px; overflow-y:auto;
+  }
+  .modal-overlay.active{display:flex;}
+  .modal-box{
+    background:#fff; border-radius:6px; max-width:480px; width:100%;
+    padding:18px; margin-top:24px; margin-bottom:24px; position:relative;
+    box-shadow:0 10px 30px rgba(0,0,0,.25);
+  }
+  .modal-box .modal-close{
+    position:absolute; top:8px; right:8px; background:none; border:none;
+    font-size:22px; line-height:1; color:var(--ink-soft); padding:6px;
+  }
+  .modal-box .modal-close:hover{color:var(--ink);}
+  .modal-box h2{font-size:16px; padding-right:24px;}
+  .modal-box .modal-cat{font-size:12.5px; color:var(--ink-soft); margin-bottom:14px;}
+  .modal-photos{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px;}
+  .modal-photos .mp{flex:1; min-width:130px; text-align:center;}
+  .modal-photos .mp-photo-wrap{position:relative;}
+  .modal-photos img{width:100%; height:150px; object-fit:cover; border-radius:4px; border:1px solid var(--line);}
+  .modal-photos .photo-placeholder{width:100%; height:150px;}
+  .modal-photos .mp-photo-wrap .dl-btn{position:absolute; top:6px; right:6px; background:rgba(255,255,255,.92);}
+  .modal-photos .mp-label{font-size:11.5px; color:var(--ink-soft); margin-top:4px; font-weight:600;}
+  .modal-table{width:100%; font-size:13.5px; border-collapse:collapse; margin-top:2px;}
+  .modal-table td{padding:6px 2px; border-bottom:1px solid var(--line); vertical-align:top;}
+  .modal-table td:first-child{color:var(--ink-soft);}
+  .modal-table td:last-child{text-align:right; font-weight:600;}
+  .modal-section-title{font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:.3px; color:var(--ink-soft); margin:14px 0 4px;}
 
   @media print{
     header.top, nav.tabs, .btn-row, .no-print{display:none !important;}
@@ -249,10 +311,15 @@
 
   <!-- ================= STOK AWAL ================= -->
   <section class="panel" id="panel-awal">
-    <div class="card">
+    <div class="card lockable-form">
       <h2>Pencatatan Stok Awal</h2>
       <p class="hint">Diisi di awal periode (sekitar tanggal 11), setelah barang belanjaan diterima. Sertakan foto kondisi stok tiap barang sebagai bukti awal.</p>
       <div class="hint" id="awalDateHint" style="margin-bottom:12px;"></div>
+      <div class="locked-notice" id="lockedNotice-awal" style="display:none;">🔒 Periode ini bukan periode berjalan &amp; sudah otomatis terkunci — data tersimpan permanen dan tidak bisa diubah lagi.</div>
+      <div class="field search-field">
+        <label>Cari barang</label>
+        <input type="text" id="awalSearch" placeholder="Ketik nama barang...">
+      </div>
       <div class="group-tabs" data-group-for="awal">
         <button data-group="branch" class="active">Belanja Bulanan Branch</button>
         <button data-group="netop">Belanja Bulanan Netop</button>
@@ -268,9 +335,10 @@
 
   <!-- ================= NOTA PEMBELIAN ================= -->
   <section class="panel" id="panel-nota">
-    <div class="card">
+    <div class="card lockable-form">
       <h2>Nota Pembelian</h2>
       <p class="hint">Upload foto nota (struk) pembelian barang operasional untuk periode ini. Atur tanggal tiap nota agar sesuai dengan tanggal yang tertera pada nota — tidak harus sama dengan tanggal pencatatan stok. Foto nota ini akan dilampirkan sebagai halaman tambahan pada Laporan Stok.</p>
+      <div class="locked-notice" id="lockedNotice-nota" style="display:none;">🔒 Periode ini bukan periode berjalan &amp; sudah otomatis terkunci — nota pembelian tidak bisa diubah lagi.</div>
       <div id="notaList"></div>
       <div class="btn-row">
         <button class="btn secondary" id="btnAddNota">+ Tambah Nota</button>
@@ -282,12 +350,17 @@
 
   <!-- ================= MINGGUAN ================= -->
   <section class="panel" id="panel-mingguan">
-    <div class="card">
+    <div class="card lockable-form">
       <h2>Cek Stok Mingguan</h2>
       <p class="hint">Lakukan pengecekan sisa stok tiap minggu selama periode berjalan, untuk memantau kecepatan pemakaian. Foto tidak wajib pada cek mingguan.</p>
+      <div class="locked-notice" id="lockedNotice-mingguan" style="display:none;">🔒 Periode ini bukan periode berjalan &amp; sudah otomatis terkunci — cek mingguan tidak bisa diubah lagi.</div>
       <div class="row">
         <div class="field"><label>Minggu ke-</label><input type="number" id="weekNumber" min="1" value="1"></div>
         <div class="field"><label>Tanggal cek</label><input type="date" id="weekDate"></div>
+      </div>
+      <div class="field search-field">
+        <label>Cari barang</label>
+        <input type="text" id="mingguanSearch" placeholder="Ketik nama barang...">
       </div>
       <div class="group-tabs" data-group-for="mingguan">
         <button data-group="branch" class="active">Belanja Bulanan Branch</button>
@@ -313,10 +386,15 @@
 
   <!-- ================= AKHIR ================= -->
   <section class="panel" id="panel-akhir">
-    <div class="card">
+    <div class="card lockable-form">
       <h2>Stok Akhir Bulan (Tanggal 10)</h2>
       <p class="hint">Diisi di akhir periode, sebelum belanja bulan berikutnya. Sertakan foto kondisi stok akhir tiap barang — data ini menjadi dasar forecast dan rencana pembelian bulan depan.</p>
       <div class="hint" id="akhirDateHint" style="margin-bottom:12px;"></div>
+      <div class="locked-notice" id="lockedNotice-akhir" style="display:none;">🔒 Periode ini bukan periode berjalan &amp; sudah otomatis terkunci — data tersimpan permanen dan tidak bisa diubah lagi.</div>
+      <div class="field search-field">
+        <label>Cari barang</label>
+        <input type="text" id="akhirSearch" placeholder="Ketik nama barang...">
+      </div>
       <div class="group-tabs" data-group-for="akhir">
         <button data-group="branch" class="active">Belanja Bulanan Branch</button>
         <button data-group="netop">Belanja Bulanan Netop</button>
@@ -386,7 +464,9 @@
       <button class="btn" id="btnRunForecast">Hitung / Perbarui Forecast</button>
       <button class="btn secondary" id="btnExportPdf">Export ke PDF</button>
       <button class="btn secondary" id="btnEmailPdf">Kirim PDF via Email</button>
+      <button class="btn secondary" id="btnDownloadAllPhotos">Unduh Semua Foto (ZIP)</button>
     </div>
+    <p class="hint no-print">Tiap foto (stok awal, stok akhir, dan nota) juga bisa diunduh satu per satu lewat ikon unduh di sebelah foto pada tab masing-masing.</p>
   </section>
 
   <!-- ================= RIWAYAT ================= -->
@@ -400,6 +480,13 @@
   </section>
 
 </main>
+
+<div class="modal-overlay no-print" id="itemReportModal">
+  <div class="modal-box">
+    <button class="modal-close" id="itemReportClose" aria-label="Tutup">&times;</button>
+    <div id="itemReportBody"></div>
+  </div>
+</div>
 
 <script>
 (function(){
@@ -430,7 +517,14 @@ let STATE = {
   // dengan kalau ini disimpan di variabel biasa yang hilang saat halaman dimuat ulang.
   dirtyAwal: {},
   dirtyAkhir: {},
-  dirtyWeek: {}
+  dirtyWeek: {},
+  // true kalau periode yang sedang dimuat BUKAN periode berjalan (sudah lewat / belum
+  // waktunya) — dipakai untuk mengunci semua form pencatatan jadi read-only.
+  locked: false,
+  // Stok Awal & Stok Akhir PERIODE SEBELUMNYA (itemId -> angka), dikirim server lewat
+  // getData, dipakai untuk indikator Dinamika Stok & Safety Stock di tab Stok Awal.
+  prevAwal: {},
+  prevAkhir: {}
 };
 
 const CATEGORY_OPTIONS = [
@@ -589,6 +683,12 @@ function applyPeriodFromId(pid){
   STATE.periodId = pid;
   STATE.periodStart = isoDate(start);
   STATE.periodEnd = isoDate(end);
+  // Kunci sementara (client-side) berdasar tanggal HP: dipastikan/ditimpa lagi oleh nilai
+  // `locked` dari server begitu pullPeriodData selesai (lihat di bawah), supaya sumber
+  // kebenaran akhirnya tetap di server walau jam HP pengguna kebetulan meleset.
+  const nowPidForLock = periodIdFrom(computePeriodFor(new Date()).start);
+  STATE.locked = (pid !== nowPidForLock);
+  applyPeriodLockUI();
   ensurePeriodOption(pid);
   document.getElementById('periodSelect').value = pid;
   document.getElementById('periodRangeHint').textContent =
@@ -722,6 +822,10 @@ function setSyncStatus(id, text, cls){
 function markDirty(key, statusId, saveFn){
   cacheState(); // simpan ke HP ini seketika, jadi tidak hilang walau langsung refresh
   if(!STATE.periodId) return;
+  if(STATE.locked){
+    setSyncStatus(statusId, 'Periode ini terkunci — perubahan tidak disimpan ke server.', 'warn');
+    return;
+  }
   setSyncStatus(statusId, 'Ada perubahan, menunggu disimpan otomatis…', 'busy');
   scheduleAutosave(key, async ()=>{
     setSyncStatus(statusId, 'Menyimpan otomatis…', 'busy');
@@ -741,6 +845,7 @@ function markDirty(key, statusId, saveFn){
 function itemGroup(it){ return (it && it.group) || 'branch'; }
 function itemsInGroup(group){ return STATE.items.filter(it=>itemGroup(it)===group); }
 let activeGroup = { items:'branch', awal:'branch', mingguan:'branch', akhir:'branch' };
+let activeSearch = { awal:'', mingguan:'', akhir:'' };
 function wireGroupTabs(){
   document.querySelectorAll('.group-tabs').forEach(nav=>{
     const section = nav.dataset.groupFor;
@@ -754,6 +859,22 @@ function wireGroupTabs(){
         if(section==='mingguan') renderWeeklyForm();
         if(section==='akhir') renderAkhirList();
       });
+    });
+  });
+}
+
+function wireSearchInputs(){
+  const map = [
+    ['awalSearch', 'awal', renderAwalList],
+    ['mingguanSearch', 'mingguan', renderWeeklyForm],
+    ['akhirSearch', 'akhir', renderAkhirList]
+  ];
+  map.forEach(([id, key, renderFn])=>{
+    const inp = document.getElementById(id);
+    if(!inp) return;
+    inp.addEventListener('input', ()=>{
+      activeSearch[key] = inp.value;
+      renderFn();
     });
   });
 }
@@ -774,6 +895,34 @@ document.getElementById('tabs').addEventListener('click', (e)=>{
 function refreshPeriodPill(){
   document.getElementById('periodPill').textContent =
     STATE.periodStart ? (fmtDate(STATE.periodStart)+" – "+fmtDate(STATE.periodEnd)) : "Periode belum dipilih";
+}
+
+/* ---------------- KUNCI PERIODE (read-only untuk periode selain periode berjalan) ---------------- */
+// Menyalakan/mematikan semua input & tombol di dalam satu kartu form (.lockable-form),
+// KECUALI kolom pencarian & tombol filter kelompok (Branch/Netop) serta tombol "lihat
+// report" — itu tetap boleh dipakai untuk menelusuri data periode yang sudah terkunci,
+// karena tidak mengubah apa pun.
+function applyLockToCard(cardEl, locked){
+  cardEl.querySelectorAll('input, textarea, select, button').forEach(el=>{
+    if(el.closest('.search-field')) return;
+    if(el.closest('.group-tabs')) return;
+    if(el.classList.contains('view-btn')) return;
+    el.disabled = locked;
+  });
+  // Kanvas tanda tangan bukan elemen <input>/<button>, jadi dimatikan lewat pointer-events
+  // supaya tidak bisa digambar ulang saat periode terkunci.
+  cardEl.querySelectorAll('canvas.sig').forEach(cv=>{
+    cv.style.pointerEvents = locked ? 'none' : '';
+    cv.style.opacity = locked ? '0.6' : '';
+  });
+}
+function applyPeriodLockUI(){
+  const locked = !!STATE.locked;
+  ['awal','nota','mingguan','akhir'].forEach(key=>{
+    const notice = document.getElementById('lockedNotice-'+key);
+    if(notice) notice.style.display = locked ? 'flex' : 'none';
+  });
+  document.querySelectorAll('.lockable-form').forEach(card=> applyLockToCard(card, locked));
 }
 document.getElementById('btnUsePeriodNow').addEventListener('click', async ()=>{
   const nowPid = periodIdFrom(computePeriodFor(new Date()).start);
@@ -953,10 +1102,79 @@ function resizeNotaImage(file){
   return resizeImage(file, 1500, 2600, { maxChars: 260000, startQuality: 0.85, qualityFloor: 0.55, qualityStep: 0.05 });
 }
 
-function itemRowTemplate(it, storeObj, withPhoto){
+const EYE_ICON_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>`;
+const DOWNLOAD_ICON_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M4 19h16"/></svg>`;
+
+/* ---------------- UNDUH FOTO (Stok Awal / Stok Akhir / Nota) ---------------- */
+// Semua foto yang diupload (kondisi stok maupun nota) disimpan sebagai data URL
+// (base64) di STATE. Fungsi-fungsi berikut memberi cara mengunduhnya sebagai file
+// gambar biasa ke perangkat pengguna, satu per satu atau sekaligus (ZIP).
+function safeFileSlug(str){
+  return String(str==null?'':str).trim().replace(/[^a-zA-Z0-9\-_]+/g,'_').replace(/^_+|_+$/g,'') || 'file';
+}
+function extFromDataUri(uri){
+  const m = /^data:image\/(\w+);/.exec(uri || '');
+  if(!m) return 'jpg';
+  const t = m[1].toLowerCase();
+  return t === 'jpeg' ? 'jpg' : t;
+}
+function itemPhotoFilename(it, stage, dataUrl){
+  return safeFileSlug(it && it.name)+'_'+stage+'_'+safeFileSlug(STATE.periodId)+'.'+extFromDataUri(dataUrl);
+}
+function notaPhotoFilename(n){
+  return 'Nota_'+safeFileSlug(fmtDate(n && n.date) || 'tanggal')+'_'+safeFileSlug(STATE.periodId)+'.'+extFromDataUri(n && n.photo);
+}
+function downloadDataUrl(dataUrl, filename){
+  if(!dataUrl) return;
+  try{
+    const a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = filename || 'foto.jpg';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }catch(e){
+    toast("Gagal mengunduh foto: "+e.message);
+  }
+}
+// Bungkus thumbnail foto (atau placeholder kalau belum ada) beserta tombol unduhnya,
+// dipakai bersama oleh form Stok Awal/Akhir dan Nota Pembelian.
+function photoSlotHtml(dataUrl){
+  return `<span class="photo-slot">${dataUrl
+    ? `<img class="photo-thumb" src="${dataUrl}"><button type="button" class="dl-btn photo-dl-btn" title="Unduh foto" aria-label="Unduh foto">${DOWNLOAD_ICON_SVG}</button>`
+    : `<div class="photo-placeholder">Belum ada</div>`}</span>`;
+}
+// Pasang klik-handler tombol unduh di dalam sebuah container (photo-slot / pg-item / dll).
+// getDataUrl & getFilename berupa fungsi (bukan nilai langsung) supaya selalu mengambil
+// foto TERBARU saat tombol diklik, bukan foto pada saat elemen pertama kali dirender.
+function wirePhotoDlBtn(container, getDataUrl, getFilename){
+  if(!container) return;
+  const btn = container.querySelector('.photo-dl-btn');
+  if(!btn) return;
+  btn.addEventListener('click', (e)=>{
+    e.preventDefault();
+    const url = getDataUrl();
+    if(!url) return;
+    downloadDataUrl(url, getFilename());
+  });
+}
+// Item galeri foto (Lampiran Stok Akhir / Nota Pembelian di tab Laporan) — foto + tombol unduh overlay.
+function pgItemHtml(imgUrl, title, meta){
+  return `<div class="pg-item">
+    <div class="pg-photo-wrap">
+      <img src="${imgUrl}">
+      <button type="button" class="dl-btn photo-dl-btn" title="Unduh foto" aria-label="Unduh foto">${DOWNLOAD_ICON_SVG}</button>
+    </div>
+    <div class="pg-name">${title}</div>
+    <div class="pg-meta">${meta}</div>
+  </div>`;
+}
+
+function itemRowTemplate(it, storeObj, withPhoto, withView, withIndicator){
   const val = storeObj[it.id] || {};
   return `
   <div class="item-line" data-item="${it.id}">
+    ${withView ? `<button type="button" class="view-btn" data-view="${it.id}" title="Lihat report barang ini" aria-label="Lihat report barang ini">${EYE_ICON_SVG}</button>` : ``}
     <div class="head">
       <span class="name">${escapeHtml(it.name)}</span>
       <span class="cat">${escapeHtml(it.category)} · ${escapeHtml(it.unit)}</span>
@@ -970,23 +1188,89 @@ function itemRowTemplate(it, storeObj, withPhoto){
       <div class="field">
         <label>Foto kondisi stok</label>
         <div class="photo-row">
-          ${val.photo ? `<img class="photo-thumb" src="${val.photo}">` : `<div class="photo-placeholder">Belum ada</div>`}
+          ${photoSlotHtml(val.photo)}
           <input type="file" accept="image/*" capture="environment" class="photo-input">
         </div>
       </div>` : ``}
     </div>
+    ${withIndicator ? `<div class="awal-indicator" data-indicator="${it.id}"></div>` : ``}
   </div>`;
+}
+
+/* ---------------- DINAMIKA STOK & SAFETY STOCK (tab Stok Awal) ---------------- */
+// Dihitung tiap kali Stok Awal periode baru diisi, membandingkan terhadap data periode
+// SEBELUMNYA (STATE.prevAwal / STATE.prevAkhir, dikirim server lewat getData):
+// - Dinamika Stok: Stok Awal baru dibanding Stok Akhir periode lalu -> Bertambah/Berkurang/Tetap.
+// - Safety Stock: standarnya adalah Stok Awal periode lalu. Aman kalau Stok Awal baru >=
+//   standar itu; kalau kurang, ditampilkan berapa unit kekurangannya.
+function computeAwalIndicator(itemId){
+  const val = STATE.awal[itemId];
+  const cur = val ? val.qty : null;
+  if(cur == null) return null; // belum diisi -> belum ada apa pun untuk dibandingkan
+  const prevAkhir = STATE.prevAkhir ? STATE.prevAkhir[itemId] : null;
+  const prevAwal = STATE.prevAwal ? STATE.prevAwal[itemId] : null;
+
+  let dinamika = null;
+  if(prevAkhir != null){
+    const diff = cur - prevAkhir;
+    if(diff > 0) dinamika = {label:'Bertambah', diff, cls:'ok'};
+    else if(diff < 0) dinamika = {label:'Berkurang', diff:Math.abs(diff), cls:'neutral'};
+    else dinamika = {label:'Tetap', diff:0, cls:'neutral'};
+  }
+
+  let safety = null;
+  if(prevAwal != null){
+    safety = (cur >= prevAwal)
+      ? {text:'Aman', cls:'ok'}
+      : {text:'Kurang '+(prevAwal-cur)+' dari Safety Stock', cls:'danger'};
+  }
+  return {dinamika, safety};
+}
+function awalIndicatorHtml(itemId){
+  const r = computeAwalIndicator(itemId);
+  if(!r) return '';
+  const it = STATE.items.find(x=>x.id===itemId);
+  const unit = escapeHtml((it && it.unit) || 'pcs');
+  const parts = [];
+  if(r.dinamika){
+    const diffText = r.dinamika.diff ? ' '+r.dinamika.diff+' '+unit : '';
+    parts.push(`<span class="badge ${r.dinamika.cls}">${r.dinamika.label}${diffText} dari stok akhir lalu</span>`);
+  } else {
+    parts.push(`<span class="badge neutral">Belum ada data stok akhir periode lalu</span>`);
+  }
+  if(r.safety){
+    const safetyLabel = r.safety.text==='Aman' ? 'Aman (≥ Safety Stock)' : (r.safety.text+' '+unit);
+    parts.push(`<span class="badge ${r.safety.cls}">${safetyLabel}</span>`);
+  } else {
+    parts.push(`<span class="badge neutral">Belum ada standar Safety Stock (stok awal lalu)</span>`);
+  }
+  return parts.join('');
+}
+function updateAwalIndicator(itemId){
+  const el = document.querySelector('#awalList [data-indicator="'+itemId+'"]');
+  if(!el) return;
+  el.innerHTML = awalIndicatorHtml(itemId);
 }
 // dirtyMap: kalau diisi (mis. STATE.dirtyAwal), itemId yang berubah dicatat di sini supaya
 // autosave hanya mengirim barang yang benar-benar berubah, bukan seluruh form.
+function stageLabelForStore(storeObj){
+  if(storeObj === STATE.awal) return 'StokAwal';
+  if(storeObj === STATE.akhir) return 'StokAkhir';
+  return 'Foto';
+}
 function bindItemRow(rowEl, it, storeObj, onDirty, dirtyMap){
+  const stage = stageLabelForStore(storeObj);
   const qtyInput = rowEl.querySelector('.qty-input');
   qtyInput.addEventListener('input', ()=>{
     storeObj[it.id] = storeObj[it.id] || {};
     storeObj[it.id].qty = qtyInput.value === '' ? null : Number(qtyInput.value);
     if(dirtyMap) dirtyMap[it.id] = true;
     if(onDirty) onDirty();
+    if(storeObj === STATE.awal) updateAwalIndicator(it.id);
   });
+  wirePhotoDlBtn(rowEl.querySelector('.photo-slot'),
+    ()=> (storeObj[it.id]||{}).photo,
+    ()=> itemPhotoFilename(it, stage, (storeObj[it.id]||{}).photo));
   const photoInput = rowEl.querySelector('.photo-input');
   if(photoInput){
     photoInput.addEventListener('change', async ()=>{
@@ -995,7 +1279,10 @@ function bindItemRow(rowEl, it, storeObj, onDirty, dirtyMap){
       storeObj[it.id] = storeObj[it.id] || {};
       storeObj[it.id].photo = dataUrl;
       const row = photoInput.closest('.photo-row');
-      row.querySelector('.photo-thumb,.photo-placeholder').outerHTML = `<img class="photo-thumb" src="${dataUrl}">`;
+      row.querySelector('.photo-slot').outerHTML = photoSlotHtml(dataUrl);
+      wirePhotoDlBtn(row.querySelector('.photo-slot'),
+        ()=> (storeObj[it.id]||{}).photo,
+        ()=> itemPhotoFilename(it, stage, (storeObj[it.id]||{}).photo));
       if(dirtyMap) dirtyMap[it.id] = true;
       if(onDirty) onDirty();
     });
@@ -1009,20 +1296,36 @@ function renderStockForms(){
   renderNotaList();
 }
 
-function renderGroupFilteredList(wrap, group, storeObj, withPhoto, onDirty, dirtyMap){
+function renderGroupFilteredList(wrap, group, storeObj, withPhoto, onDirty, dirtyMap, searchTerm, withView, withIndicator){
   wrap.innerHTML = "";
-  const filtered = itemsInGroup(group);
+  let filtered = itemsInGroup(group);
+  const q = (searchTerm||'').trim().toLowerCase();
+  if(q){
+    filtered = filtered.filter(it =>
+      (it.name||'').toLowerCase().includes(q) || (it.category||'').toLowerCase().includes(q)
+    );
+  }
   if(!filtered.length){
-    wrap.innerHTML = `<div class="empty">Belum ada barang di kelompok ${escapeHtml(GROUP_LABELS[group])}.</div>`;
+    wrap.innerHTML = q
+      ? `<div class="empty">Tidak ada barang yang cocok dengan pencarian "${escapeHtml(searchTerm)}".</div>`
+      : `<div class="empty">Belum ada barang di kelompok ${escapeHtml(GROUP_LABELS[group])}.</div>`;
     return;
   }
   filtered.forEach(it=>{
-    wrap.insertAdjacentHTML('beforeend', itemRowTemplate(it, storeObj, withPhoto));
+    wrap.insertAdjacentHTML('beforeend', itemRowTemplate(it, storeObj, withPhoto, withView, withIndicator));
   });
   wrap.querySelectorAll('.item-line').forEach(row=>{
     const it = STATE.items.find(x=>x.id===row.dataset.item);
     if(it) bindItemRow(row, it, storeObj, onDirty, dirtyMap);
   });
+  if(withView){
+    wrap.querySelectorAll('[data-view]').forEach(btn=>{
+      btn.addEventListener('click', ()=> openItemReport(btn.dataset.view));
+    });
+  }
+  if(withIndicator){
+    filtered.forEach(it=> updateAwalIndicator(it.id));
+  }
 }
 
 // PENTING: dulu setiap autosave mengirim SELURUH isi STATE.awal / STATE.akhir (semua barang,
@@ -1038,20 +1341,20 @@ function renderGroupFilteredList(wrap, group, storeObj, withPhoto, onDirty, dirt
 
 // Stok awal
 function renderAwalList(){
-  renderGroupFilteredList(document.getElementById('awalList'), activeGroup.awal, STATE.awal, true, markAwalDirty, STATE.dirtyAwal);
+  renderGroupFilteredList(document.getElementById('awalList'), activeGroup.awal, STATE.awal, true, markAwalDirty, STATE.dirtyAwal, activeSearch.awal, true, true);
   document.getElementById('awalInspector').value = STATE.awalInspector||"";
 }
 
 // Stok akhir
 function renderAkhirList(){
-  renderGroupFilteredList(document.getElementById('akhirList'), activeGroup.akhir, STATE.akhir, true, markAkhirDirty, STATE.dirtyAkhir);
+  renderGroupFilteredList(document.getElementById('akhirList'), activeGroup.akhir, STATE.akhir, true, markAkhirDirty, STATE.dirtyAkhir, activeSearch.akhir, true);
   document.getElementById('akhirInspector').value = STATE.akhirInspector||"";
 }
 
 // Mingguan (current in-progress entry uses a temp object)
 let currentWeekValues = {};
 function renderWeeklyForm(){
-  renderGroupFilteredList(document.getElementById('mingguanList'), activeGroup.mingguan, currentWeekValues, false, markWeekDirty, STATE.dirtyWeek);
+  renderGroupFilteredList(document.getElementById('mingguanList'), activeGroup.mingguan, currentWeekValues, false, markWeekDirty, STATE.dirtyWeek, activeSearch.mingguan, false);
 }
 function renderWeekHistory(){
   const wrap = document.getElementById('weekHistory');
@@ -1090,6 +1393,7 @@ async function doSaveAwal(){
 }
 document.getElementById('btnSaveAwal').addEventListener('click', async ()=>{
   if(!STATE.periodId){ toast("Muat periode dulu di tab Pengaturan"); return; }
+  if(STATE.locked){ toast("Periode ini terkunci, tidak bisa disimpan"); return; }
   try{
     await doSaveAwal();
     toast("Stok awal tersimpan");
@@ -1113,6 +1417,7 @@ async function doSaveAkhir(){
 }
 document.getElementById('btnSaveAkhir').addEventListener('click', async ()=>{
   if(!STATE.periodId){ toast("Muat periode dulu di tab Pengaturan"); return; }
+  if(STATE.locked){ toast("Periode ini terkunci, tidak bisa disimpan"); return; }
   try{
     await doSaveAkhir();
     toast("Stok akhir tersimpan");
@@ -1141,6 +1446,7 @@ async function doSaveWeek(){
 }
 document.getElementById('btnSaveWeek').addEventListener('click', async ()=>{
   if(!STATE.periodId){ toast("Muat periode dulu di tab Pengaturan"); return; }
+  if(STATE.locked){ toast("Periode ini terkunci, tidak bisa disimpan"); return; }
   try{
     const week = Number(document.getElementById('weekNumber').value)||1;
     await doSaveWeek();
@@ -1167,7 +1473,7 @@ function notaRowTemplate(n){
       </div>
     </div>
     <div class="photo-row">
-      ${n.photo ? `<img class="photo-thumb" src="${n.photo}">` : `<div class="photo-placeholder">Belum ada</div>`}
+      ${photoSlotHtml(n.photo)}
       <input type="file" accept="image/*" capture="environment" class="nota-photo-input">
       <button class="btn ghost" data-remove-nota="${n.id}">Hapus</button>
     </div>
@@ -1188,20 +1494,23 @@ function renderNotaList(){
     const n = STATE.notaPembelian.find(x=>x.id===id);
     rowEl.querySelector('.nota-date').addEventListener('input', (e)=>{ n.date = e.target.value; markNotaDirty(); });
     rowEl.querySelector('.nota-note').addEventListener('input', (e)=>{ n.note = e.target.value; markNotaDirty(); });
+    wirePhotoDlBtn(rowEl.querySelector('.photo-slot'), ()=> n.photo, ()=> notaPhotoFilename(n));
     const photoInput = rowEl.querySelector('.nota-photo-input');
     photoInput.addEventListener('change', async ()=>{
       if(!photoInput.files[0]) return;
       const row = photoInput.closest('.photo-row');
-      const thumbEl = row.querySelector('.photo-thumb,.photo-placeholder');
-      const originalHtml = thumbEl.outerHTML;
-      thumbEl.outerHTML = `<div class="photo-placeholder">Memproses...</div>`;
+      const slotEl = row.querySelector('.photo-slot');
+      const originalHtml = slotEl.outerHTML;
+      slotEl.outerHTML = `<span class="photo-slot"><div class="photo-placeholder">Memproses...</div></span>`;
       try{
         const dataUrl = await resizeNotaImage(photoInput.files[0]);
         n.photo = dataUrl;
-        row.querySelector('.photo-thumb,.photo-placeholder').outerHTML = `<img class="photo-thumb" src="${dataUrl}">`;
+        row.querySelector('.photo-slot').outerHTML = photoSlotHtml(dataUrl);
+        wirePhotoDlBtn(row.querySelector('.photo-slot'), ()=> n.photo, ()=> notaPhotoFilename(n));
         markNotaDirty();
       }catch(e){
-        row.querySelector('.photo-thumb,.photo-placeholder').outerHTML = originalHtml;
+        row.querySelector('.photo-slot').outerHTML = originalHtml;
+        wirePhotoDlBtn(row.querySelector('.photo-slot'), ()=> n.photo, ()=> notaPhotoFilename(n));
         toast("Gagal memproses foto nota: "+e.message);
       }
     });
@@ -1215,6 +1524,7 @@ function renderNotaList(){
   });
 }
 document.getElementById('btnAddNota').addEventListener('click', ()=>{
+  if(STATE.locked){ toast("Periode ini terkunci, tidak bisa menambah nota"); return; }
   STATE.notaPembelian.push({id:'nota_'+uid(), date: STATE.periodStart || todayIso(), note:'', photo:''});
   renderNotaList();
 });
@@ -1225,6 +1535,7 @@ async function doSaveNota(){
 }
 document.getElementById('btnSaveNota').addEventListener('click', async ()=>{
   if(!STATE.periodId){ toast("Muat periode dulu di tab Pengaturan"); return; }
+  if(STATE.locked){ toast("Periode ini terkunci, tidak bisa disimpan"); return; }
   try{
     await doSaveNota();
     toast("Nota pembelian tersimpan");
@@ -1296,7 +1607,7 @@ function computeForecastRows(){
     }
     points.sort((a,b)=>a.date-b.date);
 
-    let row = {name: it.name, unit: it.unit, category: it.category || 'Lainnya', awal:'-', akhir:'-', rate:null, daysLeft:null, emptyDate:null, reorder:'-', status:'ok'};
+    let row = {id: it.id, name: it.name, unit: it.unit, category: it.category || 'Lainnya', awal:'-', akhir:'-', rate:null, daysLeft:null, emptyDate:null, reorder:'-', status:'ok'};
     if(points.length>=1){ row.awal = points[0].qty; row.akhir = points[points.length-1].qty; }
     if(points.length>=2){
       const first = points[0], lastP = points[points.length-1];
@@ -1336,6 +1647,79 @@ function statusLabel(s){
 }
 function statusLabelText(s){
   return s==='habis' ? 'Stock Habis' : s==='segera' ? 'Segera Habis' : 'Aman';
+}
+
+/* ---------------- REPORT PER ITEM (ikon mata) ---------------- */
+function wireItemReportModal(){
+  const overlay = document.getElementById('itemReportModal');
+  const closeBtn = document.getElementById('itemReportClose');
+  closeBtn.addEventListener('click', closeItemReport);
+  overlay.addEventListener('click', (e)=>{ if(e.target === overlay) closeItemReport(); });
+  document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape') closeItemReport(); });
+}
+function closeItemReport(){
+  document.getElementById('itemReportModal').classList.remove('active');
+}
+function openItemReport(itemId){
+  const it = STATE.items.find(x=>x.id===itemId);
+  if(!it) return;
+  const awalVal = STATE.awal[itemId] || {};
+  const akhirVal = STATE.akhir[itemId] || {};
+  const weekRows = STATE.weeks.slice().sort((a,b)=>a.week-b.week)
+    .map(w=> ({week:w.week, date:w.date, qty: w.values && w.values[itemId] ? w.values[itemId].qty : null}))
+    .filter(r=> r.qty!=null);
+  const forecastRow = computeForecastRows().find(r=> r.id === itemId) || null;
+
+  let html = `
+    <h2>${escapeHtml(it.name)}</h2>
+    <div class="modal-cat">${escapeHtml(it.category||'Lainnya')} · ${escapeHtml(it.unit)}</div>
+    <div class="modal-photos">
+      <div class="mp">
+        <div class="mp-photo-wrap">
+          ${awalVal.photo ? `<img src="${awalVal.photo}"><button type="button" class="dl-btn photo-dl-btn" data-modal-dl="awal" title="Unduh foto" aria-label="Unduh foto">${DOWNLOAD_ICON_SVG}</button>` : `<div class="photo-placeholder">Belum ada foto</div>`}
+        </div>
+        <div class="mp-label">Stok Awal</div>
+      </div>
+      <div class="mp">
+        <div class="mp-photo-wrap">
+          ${akhirVal.photo ? `<img src="${akhirVal.photo}"><button type="button" class="dl-btn photo-dl-btn" data-modal-dl="akhir" title="Unduh foto" aria-label="Unduh foto">${DOWNLOAD_ICON_SVG}</button>` : `<div class="photo-placeholder">Belum ada foto</div>`}
+        </div>
+        <div class="mp-label">Stok Akhir</div>
+      </div>
+    </div>
+    <table class="modal-table">
+      <tr><td>Stok Awal</td><td>${awalVal.qty!=null ? awalVal.qty+' '+escapeHtml(it.unit) : '-'}</td></tr>
+      <tr><td>Stok Akhir</td><td>${akhirVal.qty!=null ? akhirVal.qty+' '+escapeHtml(it.unit) : '-'}</td></tr>
+    </table>`;
+
+  if(weekRows.length){
+    html += `<div class="modal-section-title">Cek Mingguan</div><table class="modal-table">`;
+    weekRows.forEach(r=>{
+      html += `<tr><td>Minggu ${r.week} · ${fmtDate(r.date)}</td><td>${r.qty} ${escapeHtml(it.unit)}</td></tr>`;
+    });
+    html += `</table>`;
+  }
+
+  if(forecastRow){
+    html += `<div class="modal-section-title">Forecast</div><table class="modal-table">
+      <tr><td>Pakai / Hari</td><td>${forecastRow.rate!=null ? forecastRow.rate.toFixed(2) : '-'}</td></tr>
+      <tr><td>Sisa Hari</td><td>${forecastRow.daysLeft!=null ? forecastRow.daysLeft : '-'}</td></tr>
+      <tr><td>Perkiraan Habis</td><td>${forecastRow.emptyDate ? fmtDate(forecastRow.emptyDate) : '-'}</td></tr>
+      <tr><td>Saran Beli</td><td>${forecastRow.reorder} ${escapeHtml(it.unit)}</td></tr>
+      <tr><td>Status</td><td>${statusLabelText(forecastRow.status)}</td></tr>
+    </table>`;
+  }
+
+  document.getElementById('itemReportBody').innerHTML = html;
+  document.getElementById('itemReportModal').classList.add('active');
+  wirePhotoDlBtn(
+    document.querySelector('#itemReportBody [data-modal-dl="awal"]')?.closest('.mp-photo-wrap'),
+    ()=> awalVal.photo, ()=> itemPhotoFilename(it,'StokAwal',awalVal.photo)
+  );
+  wirePhotoDlBtn(
+    document.querySelector('#itemReportBody [data-modal-dl="akhir"]')?.closest('.mp-photo-wrap'),
+    ()=> akhirVal.photo, ()=> itemPhotoFilename(it,'StokAkhir',akhirVal.photo)
+  );
 }
 // Kelompokkan baris (forecast / kebutuhan beli) berdasarkan kategori barangnya,
 // urut mengikuti urutan kategori yang sudah dikenal (allCategoryOptions), supaya
@@ -1423,12 +1807,13 @@ function renderAkhirPhotoGrid(){
   card.style.display = '';
   grid.innerHTML = withPhoto.map(it=>{
     const v = STATE.akhir[it.id];
-    return `<div class="pg-item">
-      <img src="${v.photo}">
-      <div class="pg-name">${escapeHtml(it.name)}</div>
-      <div class="pg-meta">${v.qty!=null?v.qty:'-'} ${escapeHtml(it.unit)} · ${escapeHtml(it.category)}</div>
-    </div>`;
+    return pgItemHtml(v.photo, escapeHtml(it.name), `${v.qty!=null?v.qty:'-'} ${escapeHtml(it.unit)} · ${escapeHtml(it.category)}`);
   }).join('');
+  grid.querySelectorAll('.pg-item').forEach((el, idx)=>{
+    const it = withPhoto[idx];
+    const v = STATE.akhir[it.id];
+    wirePhotoDlBtn(el, ()=> v.photo, ()=> itemPhotoFilename(it,'StokAkhir',v.photo));
+  });
 }
 
 function renderNotaPhotoGrid(){
@@ -1441,13 +1826,12 @@ function renderNotaPhotoGrid(){
     return;
   }
   card.style.display = '';
-  grid.innerHTML = withPhoto.slice().sort((a,b)=> (a.date||'').localeCompare(b.date||'')).map(n=>{
-    return `<div class="pg-item">
-      <img src="${n.photo}">
-      <div class="pg-name">${fmtDate(n.date)}</div>
-      <div class="pg-meta">${escapeHtml(n.note||'')}</div>
-    </div>`;
-  }).join('');
+  const sorted = withPhoto.slice().sort((a,b)=> (a.date||'').localeCompare(b.date||''));
+  grid.innerHTML = sorted.map(n=> pgItemHtml(n.photo, fmtDate(n.date), escapeHtml(n.note||''))).join('');
+  grid.querySelectorAll('.pg-item').forEach((el, idx)=>{
+    const n = sorted[idx];
+    wirePhotoDlBtn(el, ()=> n.photo, ()=> notaPhotoFilename(n));
+  });
 }
 document.getElementById('btnRunForecast').addEventListener('click', runForecast);
 
@@ -1786,6 +2170,55 @@ document.getElementById('btnEmailPdf').addEventListener('click', async ()=>{
   }catch(e){ toast("Gagal kirim email: "+e.message); }
 });
 
+/* ---------------- UNDUH SEMUA FOTO (ZIP): Stok Awal, Stok Akhir, Nota ---------------- */
+async function dataUrlToUint8Array(dataUrl){
+  const res = await fetch(dataUrl);
+  const buf = await res.arrayBuffer();
+  return new Uint8Array(buf);
+}
+document.getElementById('btnDownloadAllPhotos').addEventListener('click', async ()=>{
+  if(typeof JSZip === 'undefined'){ toast("Gagal memuat pustaka ZIP. Cek koneksi internet lalu coba lagi."); return; }
+  const zip = new JSZip();
+  const awalFolder = zip.folder('Stok Awal');
+  const akhirFolder = zip.folder('Stok Akhir');
+  const notaFolder = zip.folder('Nota Pembelian');
+  let count = 0;
+  try{
+    for(const it of STATE.items){
+      const av = STATE.awal[it.id];
+      if(av && av.photo){
+        awalFolder.file(itemPhotoFilename(it,'StokAwal',av.photo), await dataUrlToUint8Array(av.photo));
+        count++;
+      }
+      const kv = STATE.akhir[it.id];
+      if(kv && kv.photo){
+        akhirFolder.file(itemPhotoFilename(it,'StokAkhir',kv.photo), await dataUrlToUint8Array(kv.photo));
+        count++;
+      }
+    }
+    for(const n of (STATE.notaPembelian||[])){
+      if(n.photo){
+        notaFolder.file(notaPhotoFilename(n), await dataUrlToUint8Array(n.photo));
+        count++;
+      }
+    }
+  }catch(e){ toast("Gagal menyiapkan ZIP: "+e.message); return; }
+  if(!count){ toast("Belum ada foto (stok awal/akhir/nota) untuk diunduh pada periode ini."); return; }
+  toast("Menyiapkan ZIP berisi "+count+" foto...");
+  try{
+    const blob = await zip.generateAsync({type:'blob'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'Foto-Stok-'+safeFileSlug(STATE.periodId||'periode')+'.zip';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=> URL.revokeObjectURL(url), 5000);
+    toast("ZIP berisi "+count+" foto berhasil diunduh");
+  }catch(e){ toast("Gagal membuat file ZIP: "+e.message); }
+});
+
 /* ---------------- RIWAYAT ---------------- */
 async function refreshPeriods(){
   const wrap = document.getElementById('periodListArea');
@@ -1843,6 +2276,13 @@ async function pullPeriodData(){
     if(res.awalMeta && res.awalMeta.inspector) STATE.awalInspector = res.awalMeta.inspector;
     if(res.akhirMeta && res.akhirMeta.inspector) STATE.akhirInspector = res.akhirMeta.inspector;
     if(res.akhirMeta && res.akhirMeta.signature) STATE.sigMonthly = res.akhirMeta.signature;
+    // Data periode SEBELUMNYA (untuk indikator Dinamika Stok & Safety Stock) dan status
+    // terkunci — server adalah sumber kebenaran akhir untuk `locked`, menimpa perkiraan
+    // sementara dari tanggal HP yang sudah dipasang di applyPeriodFromId.
+    STATE.prevAwal = res.prevAwal || {};
+    STATE.prevAkhir = res.prevAkhir || {};
+    if(typeof res.locked === 'boolean') STATE.locked = res.locked;
+    applyPeriodLockUI();
     cacheState();
     renderStockForms();
   }catch(e){
@@ -1861,9 +2301,16 @@ async function init(){
 
   buildPeriodSelectOptions();
   const nowPid = periodIdFrom(computePeriodFor(new Date()).start);
-  applyPeriodFromId(STATE.periodId || nowPid);
+  // Auto-switch periode: kalau periode yang tersimpan di cache HP ini BUKAN periode
+  // berjalan sekarang (mis. HP dibiarkan lama, atau baru dibuka lagi setelah tanggal 11
+  // lewat), langsung pindah ke periode berjalan yang baru saat aplikasi dibuka — jangan
+  // diam di periode lama yang sudah otomatis terkunci.
+  const targetPid = (STATE.periodId && STATE.periodId === nowPid) ? STATE.periodId : nowPid;
+  applyPeriodFromId(targetPid);
 
   wireGroupTabs();
+  wireSearchInputs();
+  wireItemReportModal();
   renderItemsMaster();
   renderStockForms();
 
