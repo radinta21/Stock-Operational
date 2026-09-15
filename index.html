@@ -1201,8 +1201,11 @@ function itemRowTemplate(it, storeObj, withPhoto, withView, withIndicator){
 // Dihitung tiap kali Stok Awal periode baru diisi, membandingkan terhadap data periode
 // SEBELUMNYA (STATE.prevAwal / STATE.prevAkhir, dikirim server lewat getData):
 // - Dinamika Stok: Stok Awal baru dibanding Stok Akhir periode lalu -> Bertambah/Berkurang/Tetap.
-// - Safety Stock: standarnya adalah Stok Awal periode lalu. Aman kalau Stok Awal baru >=
-//   standar itu; kalau kurang, ditampilkan berapa unit kekurangannya.
+// - Safety Stock: standarnya adalah PEMAKAIAN selama periode lalu, yaitu
+//   (Stok Awal periode lalu - Stok Akhir periode lalu) — bukan Stok Awal lalu itu sendiri.
+//   Contoh: Unibel PVC stok awal lalu 16 pcs, stok akhir lalu 4 pcs -> pemakaian 1 periode
+//   = 12 pcs, itulah standar Safety Stock-nya. Aman kalau Stok Awal baru >= standar itu;
+//   kalau kurang, ditampilkan berapa unit kekurangannya.
 function computeAwalIndicator(itemId){
   const val = STATE.awal[itemId];
   const cur = val ? val.qty : null;
@@ -1218,11 +1221,16 @@ function computeAwalIndicator(itemId){
     else dinamika = {label:'Tetap', diff:0, cls:'neutral'};
   }
 
+  // Butuh DUA-DUANYA (stok awal & stok akhir periode lalu) supaya pemakaian 1 periode bisa
+  // dihitung. Dibatasi minimal 0 (Math.max) untuk kasus tak wajar di mana stok akhir lalu
+  // justru lebih besar dari stok awal lalu (mis. ada tambahan stok di tengah periode) —
+  // supaya standar Safety Stock tidak pernah negatif.
   let safety = null;
-  if(prevAwal != null){
-    safety = (cur >= prevAwal)
-      ? {text:'Aman', cls:'ok'}
-      : {text:'Kurang '+(prevAwal-cur)+' dari Safety Stock', cls:'danger'};
+  if(prevAwal != null && prevAkhir != null){
+    const standard = Math.max(0, prevAwal - prevAkhir);
+    safety = (cur >= standard)
+      ? {text:'Aman', standard, cls:'ok'}
+      : {text:'Kurang '+(standard-cur)+' dari Safety Stock', standard, cls:'danger'};
   }
   return {dinamika, safety};
 }
@@ -1239,10 +1247,12 @@ function awalIndicatorHtml(itemId){
     parts.push(`<span class="badge neutral">Belum ada data stok akhir periode lalu</span>`);
   }
   if(r.safety){
-    const safetyLabel = r.safety.text==='Aman' ? 'Aman (≥ Safety Stock)' : (r.safety.text+' '+unit);
+    const safetyLabel = r.safety.text==='Aman'
+      ? 'Aman (≥ pemakaian 1 periode lalu: '+r.safety.standard+' '+unit+')'
+      : r.safety.text+' '+unit+' (standar pemakaian lalu: '+r.safety.standard+' '+unit+')';
     parts.push(`<span class="badge ${r.safety.cls}">${safetyLabel}</span>`);
   } else {
-    parts.push(`<span class="badge neutral">Belum ada standar Safety Stock (stok awal lalu)</span>`);
+    parts.push(`<span class="badge neutral">Belum ada standar Safety Stock (butuh stok awal & akhir periode lalu)</span>`);
   }
   return parts.join('');
 }
