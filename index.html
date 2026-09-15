@@ -2286,7 +2286,11 @@ async function pullPeriodData(){
     cacheState();
     renderStockForms();
   }catch(e){
-    toast("Belum bisa memuat dari spreadsheet (cek koneksi). Menggunakan data lokal.");
+    // Tampilkan pesan error ASLI dari server/koneksi (bukan cuma teks generik) supaya kalau
+    // ada masalah lagi ke depannya (mis. bug di Apps Script, atau lupa deploy versi baru),
+    // penyebabnya langsung kelihatan tanpa perlu buka console/devtools.
+    toast("Gagal memuat dari server: "+e.message+" — memakai data lokal sementara.", 4200);
+    console.error("pullPeriodData error:", e);
   }
 }
 
